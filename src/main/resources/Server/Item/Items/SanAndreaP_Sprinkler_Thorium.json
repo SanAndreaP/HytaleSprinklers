@@ -1,0 +1,84 @@
+{
+  "TranslationProperties": {
+    "Name": "items.SanAndreaP_Sprinkler_Iron.name",
+    "Description": "items.SanAndreaP_Sprinkler_Iron.description"
+  },
+  "Quality": "Uncommon",
+  "PlayerAnimationsId": "Block",
+  "Categories": [
+    "Furniture.Furniture"
+  ],
+  "Icon": "Icons/ItemsGenerated/SanAndreaP_Sprinkler_Iron.png",
+  "BlockType": {
+    "State": {
+      "Id": "SanAndreaP_Sprinkler",
+      "Range": 1
+    },
+    "BlockSoundSetId": "Metal",
+    "CustomModel": "Blocks/Farming/SanAndreaP_Sprinkler.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Farming/SanAndreaP_Sprinkler_Texture_Iron.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Metal"
+      }
+    },
+    "Material": "Solid",
+    "Opacity": "Transparent",
+    "ParticleColor": "#828282",
+    "BlockParticleSetId": "Metal",
+    "Support": {
+      "Down": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "HitboxType": "SanAndreaP_Sprinkler"
+  },
+  "Tags": {
+    "Type": [
+      "Furniture"
+    ]
+  },
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Ingredient_Bar_Iron",
+        "Quantity": 4
+      },
+      {
+        "ItemId": "Ingredient_Life_Essence_Concentrated",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Id": "Farmingbench",
+        "Type": "Crafting",
+        "Categories": [
+          "Farming"
+        ],
+        "RequiredTierLevel": 5
+      }
+    ]
+  },
+  "IconProperties": {
+    "Scale": 0.55,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -15
+    ]
+  },
+  "ItemSoundSetId": "ISS_Items_Metal"
+}
