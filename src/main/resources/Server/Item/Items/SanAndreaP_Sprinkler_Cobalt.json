@@ -12,7 +12,7 @@
   "BlockType": {
     "State": {
       "Id": "SanAndreaP_Sprinkler",
-      "Range": 1
+      "Range": 3
     },
     "BlockSoundSetId": "Metal",
     "CustomModel": "Blocks/Farming/SanAndreaP_Sprinkler.blockymodel",
@@ -47,6 +47,7 @@
     ]
   },
   "Recipe": {
+    "TimeSeconds": 3,
     "Input": [
       {
         "ItemId": "Ingredient_Bar_Cobalt",

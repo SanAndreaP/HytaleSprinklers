@@ -1,24 +1,24 @@
 {
   "TranslationProperties": {
-    "Name": "items.SanAndreaP_Sprinkler_Iron.name",
-    "Description": "items.SanAndreaP_Sprinkler_Iron.description"
+    "Name": "items.SanAndreaP_Sprinkler_Thorium.name",
+    "Description": "items.SanAndreaP_Sprinkler_Thorium.description"
   },
-  "Quality": "Uncommon",
+  "Quality": "Rare",
   "PlayerAnimationsId": "Block",
   "Categories": [
     "Furniture.Furniture"
   ],
-  "Icon": "Icons/ItemsGenerated/SanAndreaP_Sprinkler_Iron.png",
+  "Icon": "Icons/ItemsGenerated/SanAndreaP_Sprinkler_Thorium.png",
   "BlockType": {
     "State": {
       "Id": "SanAndreaP_Sprinkler",
-      "Range": 1
+      "Range": 2
     },
     "BlockSoundSetId": "Metal",
     "CustomModel": "Blocks/Farming/SanAndreaP_Sprinkler.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "Blocks/Farming/SanAndreaP_Sprinkler_Texture_Iron.png",
+        "Texture": "Blocks/Farming/SanAndreaP_Sprinkler_Texture_Thorium.png",
         "Weight": 1
       }
     ],
@@ -30,7 +30,7 @@
     },
     "Material": "Solid",
     "Opacity": "Transparent",
-    "ParticleColor": "#828282",
+    "ParticleColor": "#009D6D",
     "BlockParticleSetId": "Metal",
     "Support": {
       "Down": [
@@ -47,10 +47,11 @@
     ]
   },
   "Recipe": {
+    "TimeSeconds": 3,
     "Input": [
       {
-        "ItemId": "Ingredient_Bar_Iron",
-        "Quantity": 4
+        "ItemId": "Ingredient_Bar_Thorium",
+        "Quantity": 5
       },
       {
         "ItemId": "Ingredient_Life_Essence_Concentrated",
@@ -64,7 +65,7 @@
         "Categories": [
           "Farming"
         ],
-        "RequiredTierLevel": 5
+        "RequiredTierLevel": 6
       }
     ]
   },

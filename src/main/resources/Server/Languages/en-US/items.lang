@@ -1,0 +1,10 @@
+SanAndreaP_Sprinkler_Iron.name=Iron Sprinkler
+SanAndreaP_Sprinkler_Iron.description=Waters tilled soil around itself in a 1 block radius.
+SanAndreaP_Sprinkler_Thorium.name=Thorium Sprinkler
+SanAndreaP_Sprinkler_Thorium.description=Waters tilled soil around itself in a 2 block radius.
+SanAndreaP_Sprinkler_Cobalt.name=Cobalt Sprinkler
+SanAndreaP_Sprinkler_Cobalt.description=Waters tilled soil around itself in a 3 block radius.
+SanAndreaP_Sprinkler_Adamantite.name=Adamantite Sprinkler
+SanAndreaP_Sprinkler_Adamantite.description=Waters tilled soil around itself in a 4 block radius.
+SanAndreaP_Sprinkler_Mithril.name=Mithril Sprinkler
+SanAndreaP_Sprinkler_Mithril.description=Waters tilled soil around itself in an 8 block radius.

@@ -1,0 +1,23 @@
+{
+    "Group": "SanAndreaP",
+    "Name": "Sprinkler",
+    "Version": "1.0.0",
+    "Description": "Adds simple sprinklers to automatically water your tilled soil!",
+    "Authors": [
+        {
+            "Name": "SanAndreaP",
+            "Url": "https://sanandrea.dev"
+        }
+    ],
+    "Website": "example.org",
+    "ServerVersion": "*",
+    "Dependencies": {
+        "Hytale:EntityModule": "*"
+    },
+    "OptionalDependencies": {
+        
+    },
+    "DisabledByDefault": false,
+    "Main": "dev.sanandrea.plugin.SprinklerPlugin",
+    "IncludesAssetPack": true
+}
