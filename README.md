@@ -12,7 +12,7 @@ This mod adds simple sprinklers for Hytale, to automatically water your tilled s
 
 You can craft them at the Farmer's Workbench, after upgrading it to at least tier 5. Each variant will water tilled soil within a specified range in a diamond pattern (also called "taxicab/manhattan distance").
 
-The folloWing variants are available:
+The following variants are available:
 
 * Iron: Tier 5, Range 1
 * Thorium: Tier 6, Range 2

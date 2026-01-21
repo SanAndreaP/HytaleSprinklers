@@ -1,7 +1,7 @@
 {
     "Group": "SanAndreaP",
     "Name": "Sprinkler",
-    "Version": "1.0.0",
+    "Version": "1.0.1",
     "Description": "Adds simple sprinklers to automatically water your tilled soil!",
     "Authors": [
         {

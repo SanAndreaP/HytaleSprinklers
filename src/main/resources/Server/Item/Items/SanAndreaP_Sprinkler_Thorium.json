@@ -25,7 +25,7 @@
     "DrawType": "Model",
     "Gathering": {
       "Breaking": {
-        "GatherType": "Metal"
+        "GatherType": "Rocks"
       }
     },
     "Material": "Solid",
