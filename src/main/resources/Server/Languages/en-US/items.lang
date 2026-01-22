@@ -8,3 +8,5 @@ SanAndreaP_Sprinkler_Adamantite.name=Adamantite Sprinkler
 SanAndreaP_Sprinkler_Adamantite.description=Waters tilled soil around itself in a 4 block radius.
 SanAndreaP_Sprinkler_Mithril.name=Mithril Sprinkler
 SanAndreaP_Sprinkler_Mithril.description=Waters tilled soil around itself in an 8 block radius.
+SanAndreaP_Sprinkler_Funnel.name=Sprinkler Funnel Upgrade
+SanAndreaP_Sprinkler_Funnel.description=After upgrading a sprinkler with this, you can automatically plant the seeds in your hand by interacting with the sprinkler.

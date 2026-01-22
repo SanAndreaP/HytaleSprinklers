@@ -1,0 +1,61 @@
+{
+  "TranslationProperties": {
+    "Name": "items.SanAndreaP_Sprinkler_Funnel.name",
+    "Description": "items.SanAndreaP_Sprinkler_Funnel.description"
+  },
+  "Icon": "Icons/ItemsGenerated/SanAndreaP_Sprinkler_Funnel.png",
+  "Quality": "Uncommon",
+  "MaxStack": 8,
+  "ItemLevel": 20,
+  "Categories": [
+    "Upgrade"
+  ],
+  "Recipe": {
+    "TimeSeconds": 3,
+    "Input": [
+      {
+        "ItemId": "Ingredient_Bar_Gold",
+        "Quantity": 4
+      },
+      {
+        "ItemId": "Ingredient_Void_Essence",
+        "Quantity": 2
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Id": "Farmingbench",
+        "Type": "Crafting",
+        "Categories": [
+          "Farming"
+        ],
+        "RequiredTierLevel": 8
+      }
+    ]
+  },
+  "PlayerAnimationsId": "Item",
+  "Model": "Blocks/Farming/SanAndreaP_Sprinkler_Funnel_Upgrade.blockymodel",
+  "Texture": "Blocks/Farming/SanAndreaP_Sprinkler_Texture_Thorium.png",
+  "BlockType": {
+    "CustomModel": "Blocks/Farming/SanAndreaP_Sprinkler_Funnel_Upgrade.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Farming/SanAndreaP_Sprinkler_Texture_Iron.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model"
+  },
+  "IconProperties": {
+    "Scale": 0.55,
+    "Rotation": [
+      12.5,
+      45,
+      12.5
+    ],
+    "Translation": [
+      0,
+      -15
+    ]
+  }
+}

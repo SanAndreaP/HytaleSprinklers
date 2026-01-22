@@ -12,7 +12,38 @@
   "BlockType": {
     "State": {
       "Id": "SanAndreaP_Sprinkler",
-      "Range": 8
+      "Range": 8,
+      "Definitions": {
+        "Funnel": {
+          "InteractionHint": "server.SanAndreaP_Sprinkler.interaction.funnel",
+          "CustomModel": "Blocks/Farming/SanAndreaP_Sprinkler_Funnel.blockymodel",
+          "HitboxType": "SanAndreaP_Sprinkler_Funnel",
+          "Gathering": {
+            "Breaking": {
+              "GatherType": "Rocks",
+              "DropList": {
+                "Container": {
+                  "Type": "Multiple",
+                  "Containers": [
+                    {
+                      "Type": "Single",
+                      "Item": {
+                        "ItemId": "SanAndreaP_Sprinkler_Mithril"
+                      }
+                    },
+                    {
+                      "Type": "Single",
+                      "Item": {
+                        "ItemId": "SanAndreaP_Sprinkler_Funnel"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "BlockSoundSetId": "Metal",
     "CustomModel": "Blocks/Farming/SanAndreaP_Sprinkler.blockymodel",
@@ -39,7 +70,17 @@
         }
       ]
     },
-    "HitboxType": "SanAndreaP_Sprinkler"
+    "HitboxType": "SanAndreaP_Sprinkler",
+    "InteractionHint": "server.SanAndreaP_Sprinkler.interaction",
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "SanAndreaP_Sprinkler"
+          }
+        ]
+      }
+    }
   },
   "Tags": {
     "Type": [

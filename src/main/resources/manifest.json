@@ -1,7 +1,7 @@
 {
     "Group": "SanAndreaP",
     "Name": "Sprinkler",
-    "Version": "1.0.1",
+    "Version": "1.1.0",
     "Description": "Adds simple sprinklers to automatically water your tilled soil!",
     "Authors": [
         {
@@ -18,6 +18,6 @@
         
     },
     "DisabledByDefault": false,
-    "Main": "dev.sanandrea.plugin.SprinklerPlugin",
+    "Main": "dev.sanandrea.hytale.sprinkler.SprinklerPlugin",
     "IncludesAssetPack": true
 }
