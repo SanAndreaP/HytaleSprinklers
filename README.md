@@ -10,7 +10,7 @@ This mod adds simple sprinklers for Hytale, to automatically water your tilled s
 
 ## Features
 
-You can craft them at the Farmer's Workbench, after upgrading it to at least tier 5. Each variant will water tilled soil within a specified range in a diamond pattern (also called "taxicab/manhattan distance").
+You can craft them at the Farmer's Workbench, after upgrading it to at least tier 5. Each variant will water tilled soil within a specified range in a square (since 1.1.0) ~~(pre-1.1.0: diamond pattern (also called "taxicab/manhattan distance")~~.
 
 The following variants are available:
 
@@ -19,6 +19,8 @@ The following variants are available:
 * Cobalt: Tier 7, Range 3
 * Adamantite: Tier 8, Range 4
 * Mithril: Tier 10, Range 8
+
+You can also upgrade the sprinkler with a funnel, allowing you to plant seeds within its range by interacting with it whilst holding seeds in your hand.
 
 ## Upcoming
 
@@ -29,4 +31,4 @@ The following things are on my To-Do list, which will get adressed. Suggestions 
 * [ ] An extra tab in the Farmer's Workbench for sprinklers, if feasible. If not maybe a new workbench for sprinklers? We'll see...
 * [ ] Variants that emit light. Either as extra item or by right-clicking a sprinkler with a light source (torches)
 * [ ] Variants that auto-till soil. Either as extra item or by right-clicking a sprinkler with a hoe
-* [ ] (Maybe) Letting you "spread" seeds when right-clicking the sprinkler with seed bags in your hand
+* [x] Letting you "spread" seeds when right-clicking the sprinkler with seed bags in your hand
