@@ -33,6 +33,44 @@ else if (!file(project.findProperty('hytaleHome')).exists()) {
     throw new GradleException("Failed to find Hytale at the expected location. Please make sure you have installed the game. The expected location can be changed using the hytale_home property. Currently looking in ${project.findProperty('hytaleHome')}")
 }
 
+// the following will copy the HytaleServer.jar to the local-libs folder
+// and decompile it with fernflower. To get the sources, run the task
+// "serverSourcesJar"
+
+def hytaleServerJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar");
+def localLibDir = layout.projectDirectory.dir("local-libs")
+def localServerJar = localLibDir.file("hytale-server.jar")
+
+tasks.register("syncHytaleServerJar", Copy) {
+    inputs.file(hytaleServerJar)
+    outputs.file(localServerJar)
+
+    from(hytaleServerJar)
+    into(localLibDir)
+    rename { "hytale-server.jar" }
+}
+
+def decompiledDir = layout.buildDirectory.dir("decompiled/hytale-server")
+tasks.register("decompileServer", Exec) {
+    dependsOn("syncHytaleServerJar")
+
+    inputs.file(localServerJar)
+    outputs.dir(decompiledDir)
+
+    commandLine("java", "-jar", "${rootProject.projectDir}/tools/fernflower.jar", "-dgs=1",
+                localServerJar.asFile.absolutePath, decompiledDir.get().asFile.absolutePath)
+}
+
+tasks.register("serverSourcesJar", Copy) {
+    dependsOn("decompileServer")
+    inputs.dir(decompiledDir)
+    outputs.dir(localLibDir)
+
+    from(decompiledDir)
+    into(localLibDir)
+    rename {"hytale-server-sources.jar"}
+}
+
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(java_version)
     withSourcesJar()
@@ -44,11 +82,26 @@ javadoc {
     options.addStringOption('Xdoclint:-missing', '-quiet')
 }
 
+repositories {
+    flatDir {
+        dirs "local-libs"
+    }
+}
+
 // Adds the Hytale server as a build dependency, allowing you to reference and
 // compile against their code. This requires you to have Hytale installed using
 // the official launcher for now.
+// If decompiled using "serverSourcesJar", it'll include decompiled source.
 dependencies {
-    implementation(files("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar"))
+    if( localServerJar.asFile.exists() ) {
+        implementation(name: "hytale-server")
+    } else {
+        implementation(files(hytaleServerJar))
+    }
+}
+
+tasks.named("compileJava") {
+    dependsOn("serverSourcesJar")
 }
 
 // Create the working directory to run the server if it does not already exist.

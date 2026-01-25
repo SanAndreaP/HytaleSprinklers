@@ -4,7 +4,7 @@
     "Description": "items.SanAndreaP_Sprinkler_Funnel.description"
   },
   "Icon": "Icons/ItemsGenerated/SanAndreaP_Sprinkler_Funnel.png",
-  "Quality": "Uncommon",
+  "Quality": "Rare",
   "MaxStack": 8,
   "ItemLevel": 20,
   "Categories": [
