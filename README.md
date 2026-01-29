@@ -26,8 +26,8 @@ You can also upgrade the sprinkler with a funnel, allowing you to plant seeds wi
 
 The following things are on my To-Do list, which will get adressed. Suggestions welcome!
 
-* [ ] Add animations and effects when watering
-* [ ] Optimize code to make it not run every tick, but every "watering cycle" (currently configured to 24 ingame hours for the soil itself). This would make it more server-load friendly, but stop "insta-responding" to newly tilled soil. An interaction would be added for this
+* [*] Add animations and effects when watering
+* [*] Optimize code to make it not run every tick, but every "watering cycle" (currently configured to 24 ingame hours for the soil itself). This would make it more server-load friendly, but stop "insta-responding" to newly tilled soil. An interaction would be added for this
 * [ ] An extra tab in the Farmer's Workbench for sprinklers, if feasible. If not maybe a new workbench for sprinklers? We'll see...
 * [ ] Variants that emit light. Either as extra item or by right-clicking a sprinkler with a light source (torches)
 * [ ] Variants that auto-till soil. Either as extra item or by right-clicking a sprinkler with a hoe
