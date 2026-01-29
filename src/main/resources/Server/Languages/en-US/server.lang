@@ -1,2 +1,2 @@
-SanAndreaP_Sprinkler.interaction=Press [{key}] with funnel to upgrade
-SanAndreaP_Sprinkler.interaction.funnel=Press [{key}] with seeds to plant them
+SanAndreaP_Sprinkler.interaction=Press [{key}] to activate / with funnel to upgrade
+SanAndreaP_Sprinkler.interaction.funnel=Press [{key}] to activate / with seeds to plant them

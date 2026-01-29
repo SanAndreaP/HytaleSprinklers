@@ -17,7 +17,11 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockRotation;
+import com.hypixel.hytale.protocol.Color;
+import com.hypixel.hytale.protocol.Direction;
 import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.Position;
+import com.hypixel.hytale.protocol.packets.world.SpawnParticleSystem;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.StateData;
@@ -31,6 +35,7 @@ import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackSlotTransaction;
 import com.hypixel.hytale.server.core.modules.interaction.BlockPlaceUtils;
 import com.hypixel.hytale.server.core.universe.world.SetBlockSettings;
+import com.hypixel.hytale.server.core.universe.world.WorldNotificationHandler;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.state.TickableBlockState;
@@ -53,9 +58,11 @@ public class SprinklerState
         extends BlockState
         implements TickableBlockState, DestroyableBlockState
 {
-    public static final BuilderCodec<SprinklerState> CODEC = BuilderCodec.builder(SprinklerState.class, SprinklerState::new, BlockState.BASE_CODEC).build();
-    protected Data data;
-    protected int[][] perimeter = new int[0][];
+    public static final BuilderCodec<SprinklerState> CODEC;
+    protected           Data                         data;
+    protected           int[][]                      perimeter = new int[0][];
+
+    private Instant nextRun = null;
 
     @Override
     public boolean initialize(BlockType blockType) {
@@ -70,12 +77,23 @@ public class SprinklerState
 
     @Override
     public void tick(float v, int i, ArchetypeChunk<ChunkStore> archetypeChunk, Store<ChunkStore> store, CommandBuffer<ChunkStore> commandBuffer) {
-        SprinklerHelper.callForPerimeter(this, store, this.perimeter, this::waterSoil);
+        Instant now = SprinklerHelper.getGameTime(store);
+        if( this.canRun(now) ) {
+            this.activateWatering(store, now, false);
+        }
     }
 
     private boolean waterSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime) {
+        return waterSoil(soil, blockChunk, x, y, z, chunk, gameTime, false);
+    }
+
+    private boolean forceWaterSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime) {
+        return waterSoil(soil, blockChunk, x, y, z, chunk, gameTime, true);
+    }
+
+    private boolean waterSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime, boolean force) {
         Instant wateredUntil = soil.getWateredUntil();
-        if( wateredUntil == null || gameTime.compareTo(soil.getWateredUntil()) > 0 ) {
+        if( wateredUntil == null || force || gameTime.compareTo(soil.getWateredUntil()) > 0 ) {
             Instant nextWatering = gameTime.plus(this.data.duration, ChronoUnit.SECONDS);
             soil.setWateredUntil(nextWatering);
             // decay until 1 millennium passed - effectively "never" decay - or until sprinkler gets destroyed
@@ -84,12 +102,53 @@ public class SprinklerState
             blockChunk.getSectionAtBlockY(y).scheduleTick(ChunkUtil.indexBlock(x, y, z), nextWatering);
             chunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
 
-            SprinklerPlugin.LOGGER.at(Level.FINEST).atMostEvery(1, TimeUnit.SECONDS).log("Sprinkler watered this soil!");
+            WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
+            notificationHandler.sendPacketIfChunkLoaded(
+                    new SpawnParticleSystem("Water_Can_Splash", new Position(x + 0.5D, y + 1D, z + 0.5D), new Direction(), 0.5F,
+                                            new Color((byte) 64, (byte) 96, (byte) 255)), x, z);
 
             return true;
         }
 
         return false;
+    }
+
+    private void activateWatering(Store<ChunkStore> chunkStore, Instant now, boolean force) {
+        if( SprinklerHelper.callForPerimeter(this, chunkStore, this.perimeter, force ? this::forceWaterSoil : this::waterSoil) ) {
+            WorldChunk chunk = this.getChunk();
+            WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
+
+            int x = this.getBlockX();
+            int z = this.getBlockZ();
+
+            double ox = x + 0.5F;
+            double oy = this.getBlockY();
+            double oz = z + 0.5F;
+
+            Color color = new Color((byte) 64, (byte) 96, (byte) 255);
+
+            for( int i = 0; i < 4; i++ ) {
+                float angle = (float) (i * (Math.PI / 2.0D));
+
+                SpawnParticleSystem particle = new SpawnParticleSystem("SanAndreaP_Sprinkler_Stream", new Position(ox, oy, oz),
+                                                                       new Direction(angle, 0F, 0F), 0.5F, color);
+                notificationHandler.sendPacketIfChunkLoaded(particle, x, z);
+            }
+        }
+        this.nextRun = now.plus(this.data.duration / 2, ChronoUnit.SECONDS);
+    }
+
+    public void activateWatering() {
+        Store<ChunkStore> chunkStore = Optional.ofNullable(this.getChunk())
+                                               .map(WorldChunk::getReference)
+                                               .map(Ref::getStore).orElse(null);
+        if( chunkStore == null ) {
+            return;
+        }
+
+        Instant now = SprinklerHelper.getGameTime(chunkStore);
+
+        activateWatering(chunkStore, now, true);
     }
 
     public boolean tryPlaceSeed(ItemStack itemStack, CommandBuffer<EntityStore> commandBuffer, InteractionContext interactionContext) {
@@ -107,27 +166,34 @@ public class SprinklerState
             return false;
         }
 
-        final Ref<EntityStore> store = interactionContext.getEntity();
-        final Vector3i blockFace = BlockFace.DOWN.getDirection();
-        final byte slot = interactionContext.getHeldItemSlot();
+        final Ref<EntityStore> store     = interactionContext.getEntity();
+        final Vector3i         blockFace = BlockFace.DOWN.getDirection();
+        final byte             slot      = interactionContext.getHeldItemSlot();
         return SprinklerHelper.callForPerimeter(this, this.getReference().getStore(), this.perimeter,
                                                 (_, blockChunk, x, y, z, chunk, _) -> {
-            Inventory inv = null;
-            if( EntityUtils.getEntity(store, commandBuffer) instanceof LivingEntity le ) {
-                inv = le.getInventory();
-            }
+                                                    ItemStack currSlotItem = heldItemContainer.getItemStack(slot);
+                                                    if( currSlotItem == null || currSlotItem.isEmpty() ) {
+                                                        return false;
+                                                    }
 
-            BlockType currBlockType = BlockType.getAssetMap().getAsset(blockChunk.getBlock(x, y+1, z));
-            if( currBlockType == null || "Empty".equals(currBlockType.getId()) ) {
-                BlockPlaceUtils.placeBlock(store, itemStack, blockId, heldItemContainer,
-                                           blockFace, new Vector3i(x, y + 1, z), new BlockRotation(), inv, slot,
-                                           true, chunk.getReference(), chunk.getWorld().getChunkStore().getStore(), commandBuffer);
+                                                    Inventory inv = null;
+                                                    if( EntityUtils.getEntity(store, commandBuffer) instanceof LivingEntity le ) {
+                                                        inv = le.getInventory();
+                                                    }
 
-                return true;
-            }
+                                                    BlockType currBlockType = BlockType.getAssetMap().getAsset(blockChunk.getBlock(x, y + 1, z));
+                                                    if( currBlockType == null || "Empty".equals(currBlockType.getId()) ) {
+                                                        BlockPlaceUtils.placeBlock(store, itemStack, blockId, heldItemContainer,
+                                                                                   blockFace, new Vector3i(x, y + 1, z), new BlockRotation(), inv,
+                                                                                   slot,
+                                                                                   true, chunk.getReference(),
+                                                                                   chunk.getWorld().getChunkStore().getStore(), commandBuffer);
 
-            return false;
-        });
+                                                        return true;
+                                                    }
+
+                                                    return false;
+                                                });
     }
 
     public boolean tryUpgradeSprinkler(ItemStack itemStack, CommandBuffer<EntityStore> commandBuffer, InteractionContext interactionContext) {
@@ -165,10 +231,10 @@ public class SprinklerState
             return false;
         }
 
-        final byte             slot               = interactionContext.getHeldItemSlot();
-        final Ref<EntityStore> store              = interactionContext.getEntity();
-        Player                 playerComponent    = commandBuffer.getComponent(store, Player.getComponentType());
-        boolean                isAdventureMode    = (playerComponent == null || playerComponent.getGameMode() == GameMode.Adventure);
+        final byte             slot            = interactionContext.getHeldItemSlot();
+        final Ref<EntityStore> store           = interactionContext.getEntity();
+        Player                 playerComponent = commandBuffer.getComponent(store, Player.getComponentType());
+        boolean                isAdventureMode = (playerComponent == null || playerComponent.getGameMode() == GameMode.Adventure);
         if( isAdventureMode ) {
             ItemStackSlotTransaction transaction = heldItemContainer.removeItemStackFromSlot(slot, itemStack, 1);
             if( !transaction.succeeded() ) {
@@ -188,23 +254,35 @@ public class SprinklerState
         return stateDefId.isPresent() && "Funnel".equals(stateDefId.get());
     }
 
+    public boolean canRun(Instant gameTime) {
+        return this.nextRun == null || this.nextRun.isBefore(gameTime);
+    }
+
     @Override
     public void onDestroy() {
         Store<ChunkStore> store = this.getReference().getStore();
         SprinklerHelper.callForPerimeter(this, store, this.perimeter,
                                          (soil, blockChunk, x, y, z, chunk, _) -> {
-            Instant soilDriesAt = Optional.ofNullable(soil.getWateredUntil()).orElse(Instant.now());
-            // reset decay timer
-            Instant soilDecaysAt = soilDriesAt.plus(this.data.duration, ChronoUnit.SECONDS);
-            soil.setDecayTime(soilDecaysAt);
-            chunk.setTicking(x, y, z, true);
-            blockChunk.getSectionAtBlockY(y).scheduleTick(ChunkUtil.indexBlock(x, y, z), soilDecaysAt);
-            chunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
+                                             Instant soilDriesAt = Optional.ofNullable(soil.getWateredUntil()).orElse(Instant.now());
+                                             // reset decay timer
+                                             Instant soilDecaysAt = soilDriesAt.plus(this.data.duration, ChronoUnit.SECONDS);
+                                             soil.setDecayTime(soilDecaysAt);
+                                             chunk.setTicking(x, y, z, true);
+                                             blockChunk.getSectionAtBlockY(y).scheduleTick(ChunkUtil.indexBlock(x, y, z), soilDecaysAt);
+                                             chunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
 
-            SprinklerPlugin.LOGGER.at(Level.FINEST).atMostEvery(1, TimeUnit.SECONDS).log("Sprinkler destroyed!");
+                                             SprinklerPlugin.LOGGER.at(Level.FINEST).atMostEvery(1, TimeUnit.SECONDS).log("Sprinkler destroyed!");
 
-            return true;
-        });
+                                             return true;
+                                         });
+    }
+
+    static {
+        CODEC = BuilderCodec.builder(SprinklerState.class, SprinklerState::new, BlockState.BASE_CODEC)
+                            .addField(new KeyedCodec<>("NextRun", Codec.INSTANT),
+                                      (state, nr) -> state.nextRun = nr,
+                                      state -> state.nextRun)
+                            .build();
     }
 
     public static class Data
@@ -221,7 +299,7 @@ public class SprinklerState
                     .add()
                 .build();
 
-        private int range = 1;
-        private int duration = 60*60*24;
+        private int range    = 1;
+        private int duration = 60 * 60 * 24;
     }
 }

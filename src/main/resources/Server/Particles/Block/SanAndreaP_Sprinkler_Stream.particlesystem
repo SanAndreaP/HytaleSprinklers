@@ -1,0 +1,21 @@
+{
+  "Spawners": [
+    {
+      "SpawnerId": "Watering_Can_Splash_Angle2",
+      "PositionOffset": {
+        "X": 0.0,
+        "Y": 0.5,
+        "Z": 0.65
+      },
+      "FixedRotation": false
+    },
+    {
+      "SpawnerId": "Watering_Can_Splash_Angle3",
+      "PositionOffset": {
+        "X": 0.0,
+        "Y": 0.5,
+        "Z": 0.65
+      }
+    }
+  ]
+}

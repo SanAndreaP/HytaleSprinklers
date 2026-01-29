@@ -41,13 +41,17 @@ public class SprinklerInteraction
         }
 
         if( chunk.getState(targetBlock.getX(), targetBlock.getY(), targetBlock.getZ()) instanceof SprinklerState sprinkler ) {
-            if( sprinkler.isFunneled() ) {
-                if( !sprinkler.tryPlaceSeed(itemStack, commandBuffer, context) ) {
-                    context.getState().state = InteractionState.Failed;
-                }
+            if( itemStack == null || itemStack.isEmpty() ) {
+                sprinkler.activateWatering();
             } else {
-                if( !sprinkler.tryUpgradeSprinkler(itemStack, commandBuffer, context) ) {
-                    context.getState().state = InteractionState.Failed;
+                if( sprinkler.isFunneled() ) {
+                    if( !sprinkler.tryPlaceSeed(itemStack, commandBuffer, context) ) {
+                        context.getState().state = InteractionState.Failed;
+                    }
+                } else {
+                    if( !sprinkler.tryUpgradeSprinkler(itemStack, commandBuffer, context) ) {
+                        context.getState().state = InteractionState.Failed;
+                    }
                 }
             }
         }

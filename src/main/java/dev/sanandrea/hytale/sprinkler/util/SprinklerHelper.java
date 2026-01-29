@@ -44,6 +44,13 @@ public final class SprinklerHelper
         return result.toArray(new int[0][0]);
     }
 
+    @Nonnull
+    public static Instant getGameTime(Store<ChunkStore> store) {
+        World              world            = store.getExternalData().getWorld();
+        Store<EntityStore> entityStoreStore = world.getEntityStore().getStore();
+        return entityStoreStore.getResource(WorldTimeResource.getResourceType()).getGameTime();
+    }
+
     public static boolean callForPerimeter(BlockState state, Store<ChunkStore> store, int[][] perimeterCoords, @Nonnull TilledSoilFunction process) {
         int currX = state.getBlockX();
         int currY = state.getBlockY();
