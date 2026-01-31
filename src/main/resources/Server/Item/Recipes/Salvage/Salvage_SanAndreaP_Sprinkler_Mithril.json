@@ -1,0 +1,29 @@
+{
+  "Input": [
+    {
+      "ItemId": "SanAndreaP_Sprinkler_Mithril",
+      "Quantity": 1
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Ore_Mithril",
+    "Quantity": 1
+  },
+  "Output": [
+    {
+      "ItemId": "Ore_Mithril",
+      "Quantity": 1
+    },
+    {
+      "ItemId": "Ingredient_Life_Essence",
+      "Quantity": 100
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Salvagebench"
+    }
+  ],
+  "TimeSeconds": 4
+}

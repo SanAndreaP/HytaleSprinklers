@@ -1,0 +1,29 @@
+{
+  "Input": [
+    {
+      "ItemId": "SanAndreaP_Sprinkler_Funnel",
+      "Quantity": 1
+    }
+  ],
+  "PrimaryOutput": {
+    "ItemId": "Ore_Gold",
+    "Quantity": 1
+  },
+  "Output": [
+    {
+      "ItemId": "Ore_Gold",
+      "Quantity": 1
+    },
+    {
+      "ItemId": "Ingredient_Void_Essence",
+      "Quantity": 1
+    }
+  ],
+  "BenchRequirement": [
+    {
+      "Type": "Processing",
+      "Id": "Salvagebench"
+    }
+  ],
+  "TimeSeconds": 4
+}

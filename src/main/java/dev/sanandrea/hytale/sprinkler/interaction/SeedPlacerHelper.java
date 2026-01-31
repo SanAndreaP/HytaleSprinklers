@@ -27,9 +27,7 @@ import java.util.logging.Level;
 
 public class SeedPlacerHelper
 {
-    public static final SeedPlacerHelper INSTANCE = new SeedPlacerHelper();
-
-    private final Map<String, String> SEED_TO_BLOCK = new HashMap<>();
+    private static final Map<String, String> SEED_TO_BLOCK = new HashMap<>();
 
     private SeedPlacerHelper() {}
 
@@ -40,13 +38,13 @@ public class SeedPlacerHelper
             final Map<String, String> interactionVars = item.getInteractionVars();
             if( interactionVars.containsKey("SeedId") ) {
                 String blockType = extractSeedBlockType(interactionVars.get("SeedId"), item.getData());
-                INSTANCE.SEED_TO_BLOCK.put(item.getId(), blockType);
+                SEED_TO_BLOCK.put(item.getId(), blockType);
             }
         }
     }
 
-    public String getBlockFromSeedId(String seedId) {
-        return INSTANCE.SEED_TO_BLOCK.getOrDefault(seedId, null);
+    public static String getBlockFromSeedId(String seedId) {
+        return SEED_TO_BLOCK.getOrDefault(seedId, null);
     }
 
     @SuppressWarnings("rawtypes")

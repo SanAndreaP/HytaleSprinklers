@@ -79,43 +79,34 @@ public class SprinklerState
     public void tick(float v, int i, ArchetypeChunk<ChunkStore> archetypeChunk, Store<ChunkStore> store, CommandBuffer<ChunkStore> commandBuffer) {
         Instant now = SprinklerHelper.getGameTime(store);
         if( this.canRun(now) ) {
-            this.activateWatering(store, now, false);
+            this.activateWatering(store, now);
         }
     }
 
     private boolean waterSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime) {
-        return waterSoil(soil, blockChunk, x, y, z, chunk, gameTime, false);
+        Instant nextWatering = gameTime.plus(this.data.duration, ChronoUnit.SECONDS);
+        soil.setWateredUntil(nextWatering);
+        // decay until 1 millennium passed - effectively "never" decay - or until sprinkler gets destroyed
+        soil.setDecayTime(gameTime.plus(365L * 1000L, ChronoUnit.DAYS));
+        chunk.setTicking(x, y, z, true);
+        blockChunk.getSectionAtBlockY(y).scheduleTick(ChunkUtil.indexBlock(x, y, z), nextWatering);
+        chunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
+
+        WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
+        notificationHandler.sendPacketIfChunkLoaded(
+                new SpawnParticleSystem("Water_Can_Splash", new Position(x + 0.5D, y + 1D, z + 0.5D), new Direction(), 0.5F,
+                                        new Color((byte) 64, (byte) 96, (byte) 255)), x, z);
+
+        return true;
     }
 
-    private boolean forceWaterSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime) {
-        return waterSoil(soil, blockChunk, x, y, z, chunk, gameTime, true);
-    }
-
-    private boolean waterSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime, boolean force) {
-        Instant wateredUntil = soil.getWateredUntil();
-        if( wateredUntil == null || force || gameTime.compareTo(soil.getWateredUntil()) > 0 ) {
-            Instant nextWatering = gameTime.plus(this.data.duration, ChronoUnit.SECONDS);
-            soil.setWateredUntil(nextWatering);
-            // decay until 1 millennium passed - effectively "never" decay - or until sprinkler gets destroyed
-            soil.setDecayTime(gameTime.plus(365L * 1000L, ChronoUnit.DAYS));
-            chunk.setTicking(x, y, z, true);
-            blockChunk.getSectionAtBlockY(y).scheduleTick(ChunkUtil.indexBlock(x, y, z), nextWatering);
-            chunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
-
-            WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
-            notificationHandler.sendPacketIfChunkLoaded(
-                    new SpawnParticleSystem("Water_Can_Splash", new Position(x + 0.5D, y + 1D, z + 0.5D), new Direction(), 0.5F,
-                                            new Color((byte) 64, (byte) 96, (byte) 255)), x, z);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private void activateWatering(Store<ChunkStore> chunkStore, Instant now, boolean force) {
-        if( SprinklerHelper.callForPerimeter(this, chunkStore, this.perimeter, force ? this::forceWaterSoil : this::waterSoil) ) {
+    private void activateWatering(Store<ChunkStore> chunkStore, Instant now) {
+        if( SprinklerHelper.callForPerimeter(this, chunkStore, this.perimeter, this::waterSoil) ) {
             WorldChunk chunk = this.getChunk();
+            if( chunk == null ) {
+                return;
+            }
+
             WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
 
             int x = this.getBlockX();
@@ -125,7 +116,7 @@ public class SprinklerState
             double oy = this.getBlockY();
             double oz = z + 0.5F;
 
-            Color color = new Color((byte) 64, (byte) 96, (byte) 255);
+            Color color = new Color((byte) 128, (byte) 192, (byte) 255);
 
             for( int i = 0; i < 4; i++ ) {
                 float angle = (float) (i * (Math.PI / 2.0D));
@@ -148,7 +139,7 @@ public class SprinklerState
 
         Instant now = SprinklerHelper.getGameTime(chunkStore);
 
-        activateWatering(chunkStore, now, true);
+        activateWatering(chunkStore, now);
     }
 
     public boolean tryPlaceSeed(ItemStack itemStack, CommandBuffer<EntityStore> commandBuffer, InteractionContext interactionContext) {
@@ -156,7 +147,7 @@ public class SprinklerState
             return false;
         }
 
-        String blockId = SeedPlacerHelper.INSTANCE.getBlockFromSeedId(itemStack.getItemId());
+        String blockId = SeedPlacerHelper.getBlockFromSeedId(itemStack.getItemId());
         if( blockId == null ) {
             return false;
         }
@@ -202,26 +193,16 @@ public class SprinklerState
         }
 
         final ItemContainer heldItemContainer = interactionContext.getHeldItemContainer();
-        if( heldItemContainer == null ) {
-            return false;
-        }
-
         WorldChunk chunk = this.getChunk();
-        if( chunk == null ) {
-            return false;
-        }
-
         BlockType current = this.getBlockType();
-        if( current == null ) {
+
+        if( heldItemContainer == null || chunk == null || current == null ) {
             return false;
         }
 
-        String newState = current.getBlockKeyForState("Funnel");
-        if( newState == null ) {
-            return false;
-        }
-
-        int newStateId = BlockType.getAssetMap().getIndex(newState);
+        int newStateId = Optional.ofNullable(current.getBlockKeyForState("Funnel"))
+                                 .map(k -> BlockType.getAssetMap().getIndex(k))
+                                 .orElse(Integer.MIN_VALUE);
         if( newStateId == Integer.MIN_VALUE ) {
             return false;
         }
