@@ -1,7 +1,7 @@
 {
     "Group": "SanAndreaP",
     "Name": "Sprinkler",
-    "Version": "1.2.1",
+    "Version": "1.2.2",
     "Description": "Adds simple sprinklers to automatically water your tilled soil!",
     "Authors": [
         {
@@ -9,8 +9,8 @@
             "Url": "https://sanandrea.dev"
         }
     ],
-    "Website": "example.org",
-    "ServerVersion": "*",
+    "Website": "https://www.curseforge.com/hytale/mods/andreas-sprinklers",
+    "ServerVersion": "2026.02.18-f3b8fff95",
     "Dependencies": {
         "Hytale:EntityModule": "*"
     },
