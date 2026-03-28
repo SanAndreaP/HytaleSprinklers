@@ -36,40 +36,15 @@ else if (!file(project.findProperty('hytaleHome')).exists()) {
 // the following will copy the HytaleServer.jar to the local-libs folder
 // and decompile it with fernflower. To get the sources, run the task
 // "serverSourcesJar"
-
-def hytaleServerJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar");
+def hytaleServerJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar")
 def localLibDir = layout.projectDirectory.dir("local-libs")
-def localServerJar = localLibDir.file("hytale-server.jar")
-
-tasks.register("syncHytaleServerJar", Copy) {
-    inputs.file(hytaleServerJar)
-    outputs.file(localServerJar)
-
-    from(hytaleServerJar)
-    into(localLibDir)
-    rename { "hytale-server.jar" }
+def localLibMavenDir = localLibDir.dir("maven")
+ext {
+    hsj = hytaleServerJar
+    lld = localLibDir
+    llmd = localLibMavenDir
 }
-
-def decompiledDir = layout.buildDirectory.dir("decompiled/hytale-server")
-tasks.register("decompileServer", Exec) {
-    dependsOn("syncHytaleServerJar")
-
-    inputs.file(localServerJar)
-    outputs.dir(decompiledDir)
-
-    commandLine("java", "-jar", "${rootProject.projectDir}/tools/fernflower.jar", "-dgs=1",
-                localServerJar.asFile.absolutePath, decompiledDir.get().asFile.absolutePath)
-}
-
-tasks.register("serverSourcesJar", Copy) {
-    dependsOn("decompileServer")
-    inputs.dir(decompiledDir)
-    outputs.dir(localLibDir)
-
-    from(decompiledDir)
-    into(localLibDir)
-    rename {"hytale-server-sources.jar"}
-}
+apply from: 'hytalesources.gradle'
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(java_version)
@@ -83,8 +58,8 @@ javadoc {
 }
 
 repositories {
-    flatDir {
-        dirs "local-libs"
+    maven {
+        url = uri(localLibMavenDir.asFile.getPath())
     }
 }
 
@@ -93,8 +68,8 @@ repositories {
 // the official launcher for now.
 // If decompiled using "serverSourcesJar", it'll include decompiled source.
 dependencies {
-    if( localServerJar.asFile.exists() ) {
-        implementation(name: "hytale-server")
+    if( localLibMavenDir.asFile.exists() ) {
+        implementation('com.hytale:hytaleserver:1.0')
     } else {
         implementation(files(hytaleServerJar))
     }

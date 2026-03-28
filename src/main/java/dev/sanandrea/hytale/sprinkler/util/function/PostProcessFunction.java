@@ -6,14 +6,14 @@
 
 package dev.sanandrea.hytale.sprinkler.util.function;
 
-import com.hypixel.hytale.builtin.adventure.farming.states.TilledSoilBlock;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 
 @FunctionalInterface
-public interface TilledSoilFunction
+public interface PostProcessFunction
 {
-    boolean apply(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime);
+    void accept(@Nonnull Vector3i blockCoords, WorldChunk chunk, Instant gameTime);
 }

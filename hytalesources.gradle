@@ -1,0 +1,90 @@
+/*
+ * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright © 2026 SanAndreaP
+ * Full license text can be found within the LICENSE.md file
+ */
+def hytaleServerJar = ext.hsj
+def localLibDir = ext.lld
+def localLibMavenDir = ext.llmd
+
+def localServerJar = localLibDir.file("hytaleserver-1.0.jar")
+def localServerSourceJar = localLibDir.file("hytaleserver-1.0-sources.jar")
+
+tasks.register("syncHytaleServerJar", Copy) {
+    group = 'hytalesources'
+
+    inputs.file(hytaleServerJar)
+    outputs.file(localServerJar)
+
+    from(hytaleServerJar)
+    into(localLibDir)
+    rename { localServerJar.getAsFile().getName() }
+}
+
+def decompiledDir = layout.buildDirectory.dir("decompiled/hytale-server")
+tasks.register("decompileServer", Exec) {
+    dependsOn("syncHytaleServerJar")
+
+    group = 'hytalesources'
+
+    inputs.file(localServerJar)
+    outputs.dir(decompiledDir)
+
+    commandLine("java", "-jar", "${rootProject.projectDir}/tools/fernflower.jar", "-dgs=1",
+            localServerJar.asFile.absolutePath, decompiledDir.get().asFile.absolutePath)
+}
+
+tasks.register("serverSourcesJar", Copy) {
+    dependsOn("decompileServer")
+
+    group = 'hytalesources'
+
+    inputs.dir(decompiledDir)
+    outputs.dir(localLibDir)
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from(decompiledDir)
+    into(localLibDir)
+    rename { localServerSourceJar.getAsFile().getName() }
+}
+
+tasks.register("generateHytaleDependency") {
+    dependsOn("serverSourcesJar")
+
+    def localLibMavenArtifactDir = localLibMavenDir.dir('com/hytale/hytaleserver/1.0')
+
+    inputs.file(localServerJar)
+    inputs.file(localServerSourceJar)
+    outputs.dir(localLibMavenArtifactDir)
+
+    doLast {
+        def artifactDir = localLibMavenArtifactDir.asFile
+        artifactDir.mkdirs()
+
+        // Copy main JAR
+        copy {
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            from(localServerJar)
+            into(artifactDir)
+        }
+
+        // Copy sources JAR
+        copy {
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            from(localServerSourceJar)
+            into(artifactDir)
+        }
+
+        // Generate POM
+        new File(artifactDir, "hytaleserver-1.0.pom").text = """\
+            <?xml version="1.0" encoding="UTF-8"?>
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.hytale</groupId>
+              <artifactId>hytaleserver</artifactId>
+              <version>1.0</version>
+            </project>
+        """.stripIndent().trim()
+    }
+}

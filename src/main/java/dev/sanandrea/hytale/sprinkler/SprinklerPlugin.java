@@ -19,8 +19,8 @@ import javax.annotation.Nonnull;
 import java.util.logging.Level;
 
 public class SprinklerPlugin
-        extends JavaPlugin {
-
+        extends JavaPlugin
+{
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     public SprinklerPlugin(@Nonnull JavaPluginInit init) {
@@ -39,7 +39,6 @@ public class SprinklerPlugin
 
         this.getEventRegistry().register((short) -32, LoadedAssetsEvent.class, Item.class, SeedPlacerHelper::onItemAssetLoad);
         this.getCodecRegistry(Interaction.CODEC).register("SanAndreaP_Sprinkler", SprinklerInteraction.class, SprinklerInteraction.CODEC);
-        this.getBlockStateRegistry().registerBlockState(SprinklerState.class, "SanAndreaP_Sprinkler", SprinklerState.CODEC,
-                                                        SprinklerState.Data.class, SprinklerState.Data.CODEC);
+        SprinklerBlock.registerComponent(this.getChunkStoreRegistry());
     }
 }

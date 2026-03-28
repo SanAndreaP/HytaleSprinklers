@@ -36,6 +36,7 @@ public class SeedPlacerHelper
         for( Map.Entry<String, Item> entry : assets.entrySet() ) {
             final Item                item            = entry.getValue();
             final Map<String, String> interactionVars = item.getInteractionVars();
+
             if( interactionVars.containsKey("SeedId") ) {
                 String blockType = extractSeedBlockType(interactionVars.get("SeedId"), item.getData());
                 SEED_TO_BLOCK.put(item.getId(), blockType);

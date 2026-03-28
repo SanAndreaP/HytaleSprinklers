@@ -19,18 +19,17 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.cli
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import dev.sanandrea.hytale.sprinkler.SprinklerPlugin;
-import dev.sanandrea.hytale.sprinkler.SprinklerState;
+import dev.sanandrea.hytale.sprinkler.SprinklerBlock;
+import dev.sanandrea.hytale.sprinkler.util.SprinklerHelper;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
-
-import java.util.logging.Level;
 
 public class SprinklerInteraction
         extends SimpleBlockInteraction
 {
     public static final BuilderCodec<SprinklerInteraction> CODEC = BuilderCodec.builder(SprinklerInteraction.class, SprinklerInteraction::new, SimpleBlockInteraction.CODEC)
-            .documentation("Handles interactions for the sprinkler block").build();
+                                                                               .documentation("Handles interactions for the sprinkler block")
+                                                                               .build();
 
     @Override
     protected void interactWithBlock(@NonNullDecl World world, @NonNullDecl CommandBuffer<EntityStore> commandBuffer, @NonNullDecl InteractionType type, @NonNullDecl InteractionContext context, @NullableDecl ItemStack itemStack, @NonNullDecl Vector3i targetBlock, @NonNullDecl CooldownHandler cooldownHandler) {
@@ -40,27 +39,26 @@ public class SprinklerInteraction
             return;
         }
 
-        if( chunk.getState(targetBlock.getX(), targetBlock.getY(), targetBlock.getZ()) instanceof SprinklerState sprinkler ) {
+        SprinklerBlock sprinkler = SprinklerHelper.getChunkComponent(chunk, targetBlock, SprinklerBlock.getComponent());
+        if( sprinkler != null ) {
             if( itemStack == null || itemStack.isEmpty() ) {
-                sprinkler.activateWatering();
+                sprinkler.activateWatering(targetBlock, chunk.getReference().getStore());
             } else {
-                if( sprinkler.isFunneled() ) {
-                    if( !sprinkler.tryPlaceSeed(itemStack, commandBuffer, context) ) {
+                if( SprinklerBlock.isFunneled(chunk, targetBlock) ) {
+                    if( !sprinkler.tryPlaceSeed(chunk, targetBlock, itemStack, commandBuffer, context) ) {
                         context.getState().state = InteractionState.Failed;
                     }
                 } else {
-                    if( !sprinkler.tryUpgradeSprinkler(itemStack, commandBuffer, context) ) {
+                    if( !SprinklerBlock.tryUpgradeSprinkler(chunk, targetBlock, itemStack, commandBuffer, context) ) {
                         context.getState().state = InteractionState.Failed;
                     }
                 }
             }
         }
-
-        SprinklerPlugin.LOGGER.at(Level.FINEST).log("sprinkler clicked!");
     }
 
     @Override
     protected void simulateInteractWithBlock(@NonNullDecl InteractionType type, @NonNullDecl InteractionContext context, @NullableDecl ItemStack itemStack, @NonNullDecl World world, @NonNullDecl Vector3i targetBlock) {
-
+        // no-op
     }
 }

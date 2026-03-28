@@ -10,9 +10,14 @@
   ],
   "Icon": "Icons/ItemsGenerated/SanAndreaP_Sprinkler_Mithril.png",
   "BlockType": {
+    "BlockEntity": {
+      "Components": {
+        "SanAndreaP_Sprinkler": {
+          "Range": 8
+        }
+      }
+    },
     "State": {
-      "Id": "SanAndreaP_Sprinkler",
-      "Range": 8,
       "Definitions": {
         "Funnel": {
           "InteractionHint": "server.SanAndreaP_Sprinkler.interaction.funnel",
