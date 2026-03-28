@@ -3,22 +3,25 @@
 
 This mod adds simple sprinklers for Hytale, to automatically water your tilled soil. From iron to mithril, each variant will have their own range.
 
-> **⚠️ Warning: Early Access**
+> **⚠️ Warning: Early Access**<br>
 > The game Hytale is in early access, and so is this project! Features may be
 > incomplete, unstable, or change frequently. Please be patient and understanding as development
 > continues.
 
+> **<span style="color:#f1c40f">Note coming from before Hytale Update 4 or mod update 1.3.0</span>**<br>
+> After updating from any mod version prior to 1.3.0, **break and replace all existing sprinklers in your world**, otherwise they will not work!
+
 ## Features
 
-You can craft them at the Farmer's Workbench, after upgrading it to at least tier 5. Each variant will water tilled soil within a specified range in a square (since 1.1.0) ~~(pre-1.1.0: diamond pattern (also called "taxicab/manhattan distance")~~.
+You can craft them at the Farmer's Workbench, after upgrading it to at least tier 4. Each variant will water tilled soil within a specified range in a square.
 
 The following variants are available:
 
-* Iron: Tier 5, Range 1
-* Thorium: Tier 6, Range 2
-* Cobalt: Tier 7, Range 3
-* Adamantite: Tier 8, Range 4
-* Mithril: Tier 10, Range 8
+* Iron: Tier 4, Range 1
+* Thorium: Tier 5, Range 2
+* Cobalt: Tier 6, Range 3
+* Adamantite: Tier 7, Range 4
+* Mithril: Tier 8, Range 8
 
 You can also upgrade the sprinkler with a funnel, allowing you to plant seeds within its range by interacting with it whilst holding seeds in your hand.
 
