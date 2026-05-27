@@ -13,7 +13,7 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -60,7 +60,7 @@ public final class SprinklerHelper
     public static <T extends Component<ChunkStore>> T getChunkComponent(WorldChunk chunk, Vector3i targetBlock,
                                                                         ComponentType<ChunkStore, T> componentType)
     {
-        return getChunkComponent(chunk, targetBlock.getX(), targetBlock.getY(), targetBlock.getZ(), componentType);
+        return getChunkComponent(chunk, targetBlock.x, targetBlock.y, targetBlock.z, componentType);
     }
 
     public static <T extends Component<ChunkStore>> T getChunkComponent(WorldChunk chunk, int x, int y, int z,
@@ -99,10 +99,10 @@ public final class SprinklerHelper
         BlockChunk      blockChunk = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
         assert blockChunk != null;
 
-        int globalX = ChunkUtil.worldCoordFromLocalCoord(blockChunk.getX(), localPosition.getX());
-        int globalZ = ChunkUtil.worldCoordFromLocalCoord(blockChunk.getZ(), localPosition.getZ());
+        int globalX = ChunkUtil.worldCoordFromLocalCoord(blockChunk.getX(), localPosition.x);
+        int globalZ = ChunkUtil.worldCoordFromLocalCoord(blockChunk.getZ(), localPosition.z);
 
-        return new Vector3i(globalX, localPosition.getY(), globalZ);
+        return new Vector3i(globalX, localPosition.y, globalZ);
     }
 
     public static boolean callForPerimeter(@Nonnull Vector3i blockCoords, Store<ChunkStore> store,
