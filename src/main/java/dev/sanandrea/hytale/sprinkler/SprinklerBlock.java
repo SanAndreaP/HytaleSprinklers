@@ -17,7 +17,7 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
 import com.hypixel.hytale.protocol.BlockRotation;
 import com.hypixel.hytale.protocol.Color;
 import com.hypixel.hytale.protocol.Direction;
@@ -26,11 +26,8 @@ import com.hypixel.hytale.protocol.Position;
 import com.hypixel.hytale.protocol.packets.world.SpawnParticleSystem;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
-import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackSlotTransaction;
@@ -141,7 +138,7 @@ public class SprinklerBlock
         WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
         notificationHandler.sendPacketIfChunkLoaded(
                 new SpawnParticleSystem("Water_Can_Splash", new Position(x + 0.5D, y + 1D, z + 0.5D), new Direction(), 0.5F,
-                                        new Color((byte) 64, (byte) 96, (byte) 255)), x, z);
+                                        new Color((byte) 64, (byte) 96, (byte) 255), 0F), x, z);
 
         return true;
     }
@@ -161,7 +158,7 @@ public class SprinklerBlock
 
                                                  SpawnParticleSystem particle = new SpawnParticleSystem("SanAndreaP_Sprinkler_Stream",
                                                                                                         new Position(ox, bc.y, oz),
-                                                                                                        new Direction(angle, 0F, 0F), 0.5F, color);
+                                                                                                        new Direction(angle, 0F, 0F), 0.5F, color, 0F);
                                                  notificationHandler.sendPacketIfChunkLoaded(particle, bc.x, bc.z);
                                              }
                                          });
@@ -183,7 +180,7 @@ public class SprinklerBlock
         }
 
         final Ref<EntityStore> eRef      = interactionContext.getEntity();
-        final Vector3i         blockFace = BlockFace.DOWN.getDirection();
+        final Vector3i         blockFace = new Vector3i(BlockFace.DOWN.getDirection());
         final byte             slot      = interactionContext.getHeldItemSlot();
         return SprinklerHelper.callForPerimeter(targetBlock, chunk.getReference().getStore(), this.perimeter,
                                                 (_, blockChunk, x, y, z, localChunk, _) -> {
@@ -192,19 +189,14 @@ public class SprinklerBlock
                                                         return false;
                                                     }
 
-                                                    Inventory inv = null;
-                                                    if( EntityUtils.getEntity(eRef, commandBuffer) instanceof LivingEntity le ) {
-                                                        inv = le.getInventory();
-                                                    }
-
                                                     BlockType currBlockType = BlockType.getAssetMap().getAsset(blockChunk.getBlock(x, y + 1, z));
                                                     if( currBlockType == null || "Empty".equals(currBlockType.getId()) ) {
                                                         BlockPlaceUtils.placeBlock(eRef, itemStack, blockTypeKey, heldItemContainer,
-                                                                                   blockFace, new Vector3i(x, y + 1, z), new BlockRotation(), inv,
+                                                                                   blockFace, new Vector3i(x, y + 1, z), new BlockRotation(),
                                                                                    slot,
                                                                                    true, localChunk.getReference(),
                                                                                    localChunk.getWorld().getChunkStore().getStore(), eRef.getStore(),
-                                                                                   false);
+                                                                                   false, false, false);
 
                                                         return true;
                                                     }
@@ -249,7 +241,7 @@ public class SprinklerBlock
         }
 
         int settings = SetBlockSettings.NO_UPDATE_HEIGHTMAP | SetBlockSettings.NO_SET_FILLER;
-        chunk.setBlock(targetBlock.getX(), targetBlock.getY(), targetBlock.getZ(), newStateId, newBlockType, 0, 0, settings);
+        chunk.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, newStateId, newBlockType, 0, 0, settings);
 
         return true;
     }

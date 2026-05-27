@@ -6,7 +6,7 @@
 
 package dev.sanandrea.hytale.sprinkler.util.function;
 
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 
 import javax.annotation.Nonnull;

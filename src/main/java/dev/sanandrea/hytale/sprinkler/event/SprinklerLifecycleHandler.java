@@ -15,7 +15,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
@@ -79,7 +79,7 @@ public class SprinklerLifecycleHandler
         }
 
         Vector3i   blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo, commandBuffer);
-        WorldChunk chunk       = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(blockCoords.getX(), blockCoords.getZ()));
+        WorldChunk chunk       = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(blockCoords.x, blockCoords.z));
 
         if( chunk != null ) {
             sprinkler.destroy(chunk, blockCoords);

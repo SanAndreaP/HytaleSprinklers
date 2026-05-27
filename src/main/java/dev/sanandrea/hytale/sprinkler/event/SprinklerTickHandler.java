@@ -14,7 +14,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktick.BlockTickStrategy;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
@@ -110,11 +110,11 @@ public class SprinklerTickHandler
 
         Vector3i globalCoord = SprinklerHelper.getGlobalPosition(localCoords, blockStateInfo, commandBuffer);
 
-        sprinkler.activateWatering(new Vector3i(globalCoord.getX(), globalCoord.getY(), globalCoord.getZ()), store);
+        sprinkler.activateWatering(new Vector3i(globalCoord.x, globalCoord.y, globalCoord.z), store);
         sprinkler.scheduleTick(store, commandBuffer, blockStateInfo, true);
 
         SprinklerPlugin.LOGGER.at(Level.FINEST).atMostEvery(1, TimeUnit.SECONDS)
-                              .log("Sprinkler tick at [%d, %d, %d]", globalCoord.getX(), globalCoord.getY(), globalCoord.getZ());
+                              .log("Sprinkler tick at [%d, %d, %d]", globalCoord.x, globalCoord.y, globalCoord.z);
     }
 
     @NonNullDecl
