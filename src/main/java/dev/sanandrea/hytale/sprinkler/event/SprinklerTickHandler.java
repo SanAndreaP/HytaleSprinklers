@@ -6,18 +6,13 @@
 
 package dev.sanandrea.hytale.sprinkler.event;
 
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktick.BlockTickStrategy;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockComponentSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -25,6 +20,8 @@ import dev.sanandrea.hytale.sprinkler.SprinklerBlock;
 import dev.sanandrea.hytale.sprinkler.SprinklerPlugin;
 import dev.sanandrea.hytale.sprinkler.util.SprinklerHelper;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
+import org.joml.Vector3i;
+import org.joml.Vector3ic;
 
 import javax.annotation.Nonnull;
 import java.time.Instant;
@@ -56,45 +53,40 @@ public class SprinklerTickHandler
     @Override
     public void tick(float dt, int index, @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk, @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         BlockSection blockSection = archetypeChunk.getComponent(index, this.blockSectionCT);
-        if( blockSection == null ) {
-            return;
-        }
+        if( blockSection == null ) return;
 
         if( blockSection.getTickingBlocksCountCopy() != 0 ) {
             ChunkSection chunkSection = archetypeChunk.getComponent(index, this.chunkSectionCT);
-            if( chunkSection == null ) {
-                return;
-            }
+            if( chunkSection == null ) return;
 
             Ref<ChunkStore> chunkColumnRef = chunkSection.getChunkColumnReference();
             if( chunkColumnRef != null && chunkColumnRef.isValid() ) {
-                BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(chunkColumnRef, BlockComponentChunk.getComponentType());
-                if( blockComponentChunk == null ) {
-                    return;
-                }
+                BlockComponentSection bcSection = archetypeChunk.getComponent(index, BlockComponentSection.getComponentType());
+                if( bcSection == null ) return;
 
-                blockSection.forEachTicking(blockComponentChunk, commandBuffer, chunkSection.getY(), this::tickBlock);
+                blockSection.forEachTicking(bcSection, commandBuffer, chunkSection.getY(), this::tickBlock);
             }
         }
     }
 
-    private BlockTickStrategy tickBlock(BlockComponentChunk blockComponentChunk, CommandBuffer<ChunkStore> commandBuffer,
+    private BlockTickStrategy tickBlock(BlockComponentSection bcSection, CommandBuffer<ChunkStore> commandBuffer,
                                         int localX, int localY, int localZ, int blockIndex)
     {
-        int             blockId  = ChunkUtil.indexBlockInColumn(localX, localY, localZ);
-        Ref<ChunkStore> blockRef = blockComponentChunk.getEntityReference(blockId);
-        if( blockRef != null ) {
-            SprinklerBlock sprinkler = commandBuffer.getComponent(blockRef, this.sprinklerCT);
-            if( sprinkler != null ) {
-                this.tickSprinkler(new Vector3i(localX, localY, localZ), commandBuffer, blockRef, sprinkler);
-                return BlockTickStrategy.SLEEP;
-            }
+        Ref<ChunkStore> blockRef = bcSection.getBlockReference(ChunkUtil.indexBlock(localX, localY, localZ));
+        if( blockRef == null ) return BlockTickStrategy.IGNORED;
+
+        SprinklerBlock sprinkler = commandBuffer.getComponent(blockRef, this.sprinklerCT);
+        if( sprinkler != null ) {
+            this.tickSprinkler(new Vector3i(localX, localY, localZ), commandBuffer, blockRef, sprinkler);
+            return BlockTickStrategy.SLEEP;
         }
 
         return BlockTickStrategy.IGNORED;
     }
 
-    private void tickSprinkler(@Nonnull Vector3i localCoords, CommandBuffer<ChunkStore> commandBuffer, Ref<ChunkStore> blockRef, SprinklerBlock sprinkler) {
+    private void tickSprinkler(@Nonnull Vector3ic localCoords, CommandBuffer<ChunkStore> commandBuffer, Ref<ChunkStore> blockRef,
+                               SprinklerBlock sprinkler)
+    {
         BlockModule.BlockStateInfo blockStateInfo = commandBuffer.getComponent(blockRef, this.blockStateInfoCT);
         if( blockStateInfo == null ) {
             return;
@@ -108,13 +100,13 @@ public class SprinklerTickHandler
             return;
         }
 
-        Vector3i globalCoord = SprinklerHelper.getGlobalPosition(localCoords, blockStateInfo, commandBuffer);
+        Vector3ic globalCoord = SprinklerHelper.getGlobalPosition(localCoords, blockStateInfo, commandBuffer);
 
-        sprinkler.activateWatering(new Vector3i(globalCoord.getX(), globalCoord.getY(), globalCoord.getZ()), store);
+        sprinkler.activateWatering(new Vector3i(globalCoord.x(), globalCoord.y(), globalCoord.z()), store);
         sprinkler.scheduleTick(store, commandBuffer, blockStateInfo, true);
 
         SprinklerPlugin.LOGGER.at(Level.FINEST).atMostEvery(1, TimeUnit.SECONDS)
-                              .log("Sprinkler tick at [%d, %d, %d]", globalCoord.getX(), globalCoord.getY(), globalCoord.getZ());
+                              .log("Sprinkler tick at [%d, %d, %d]", globalCoord.x(), globalCoord.y(), globalCoord.z());
     }
 
     @NonNullDecl

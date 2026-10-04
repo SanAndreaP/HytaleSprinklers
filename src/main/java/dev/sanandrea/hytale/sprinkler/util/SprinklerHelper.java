@@ -7,22 +7,21 @@
 package dev.sanandrea.hytale.sprinkler.util;
 
 import com.hypixel.hytale.builtin.adventure.farming.states.TilledSoilBlock;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Component;
-import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import dev.sanandrea.hytale.sprinkler.interaction.SeedPlacerHelper;
 import dev.sanandrea.hytale.sprinkler.util.function.PostProcessFunction;
 import dev.sanandrea.hytale.sprinkler.util.function.TilledSoilFunction;
+import org.joml.Vector3i;
+import org.joml.Vector3ic;
 
 import javax.annotation.Nonnull;
 import java.time.Instant;
@@ -57,10 +56,10 @@ public final class SprinklerHelper
         return entityStoreStore.getResource(WorldTimeResource.getResourceType()).getGameTime();
     }
 
-    public static <T extends Component<ChunkStore>> T getChunkComponent(WorldChunk chunk, Vector3i targetBlock,
+    public static <T extends Component<ChunkStore>> T getChunkComponent(WorldChunk chunk, Vector3ic targetBlock,
                                                                         ComponentType<ChunkStore, T> componentType)
     {
-        return getChunkComponent(chunk, targetBlock.getX(), targetBlock.getY(), targetBlock.getZ(), componentType);
+        return getChunkComponent(chunk, targetBlock.x(), targetBlock.y(), targetBlock.z(), componentType);
     }
 
     public static <T extends Component<ChunkStore>> T getChunkComponent(WorldChunk chunk, int x, int y, int z,
@@ -83,40 +82,41 @@ public final class SprinklerHelper
         return ref.getStore().getComponent(ref, BlockChunk.getComponentType());
     }
 
-    public static Vector3i getGlobalPosition(BlockModule.BlockStateInfo blockStateInfo, CommandBuffer<ChunkStore> commandBuffer) {
+    public static Vector3ic getGlobalPosition(BlockModule.BlockStateInfo blockStateInfo, CommandBuffer<ChunkStore> commandBuffer) {
         int index = blockStateInfo.getIndex();
         int x     = ChunkUtil.xFromIndex(index);
-        int y     = ChunkUtil.yFromBlockInColumn(index);
+        int y     = ChunkUtil.yFromIndex(index);
         int z     = ChunkUtil.zFromIndex(index);
 
-        return getGlobalPosition(new Vector3i(x, y, z), blockStateInfo, commandBuffer);
+        return getGlobalPosition(new org.joml.Vector3i(x, y, z), blockStateInfo, commandBuffer);
     }
 
-    public static Vector3i getGlobalPosition(Vector3i localPosition, BlockModule.BlockStateInfo blockStateInfo,
-                                             CommandBuffer<ChunkStore> commandBuffer)
+    public static Vector3ic getGlobalPosition(Vector3ic localPosition, BlockModule.BlockStateInfo blockStateInfo,
+                                              CommandBuffer<ChunkStore> commandBuffer)
     {
-        Ref<ChunkStore> chunkRef   = blockStateInfo.getChunkRef();
-        BlockChunk      blockChunk = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
-        assert blockChunk != null;
+        Ref<ChunkStore> chunkRef   = blockStateInfo.getSectionRef();
+        BlockSection      blockSection = commandBuffer.getComponent(chunkRef, BlockSection.getComponentType());
+        if( blockSection == null ) return null;
 
-        int globalX = ChunkUtil.worldCoordFromLocalCoord(blockChunk.getX(), localPosition.getX());
-        int globalZ = ChunkUtil.worldCoordFromLocalCoord(blockChunk.getZ(), localPosition.getZ());
+        int index = chunkRef.getIndex();
+        int globalX = ChunkUtil.worldCoordFromLocalCoord(ChunkUtil.xOfChunkIndex(index), localPosition.x());
+        int globalZ = ChunkUtil.worldCoordFromLocalCoord(ChunkUtil.zOfChunkIndex(index), localPosition.z());
 
-        return new Vector3i(globalX, localPosition.getY(), globalZ);
+        return new org.joml.Vector3i(globalX, localPosition.y(), globalZ);
     }
 
-    public static boolean callForPerimeter(@Nonnull Vector3i blockCoords, Store<ChunkStore> store,
+    public static boolean callForPerimeter(@Nonnull Vector3ic blockCoords, Store<ChunkStore> store,
                                            int[][] perimeterCoords, @Nonnull TilledSoilFunction process)
     {
         return callForPerimeter(blockCoords, store, perimeterCoords, process, null);
     }
 
-    public static boolean callForPerimeter(@Nonnull Vector3i blockCoords, Store<ChunkStore> store,
+    public static boolean callForPerimeter(@Nonnull Vector3ic blockCoords, Store<ChunkStore> store,
                                            int[][] perimeterCoords, @Nonnull TilledSoilFunction process, PostProcessFunction postProcess)
     {
-        int currX = blockCoords.x;
-        int currY = blockCoords.y;
-        int currZ = blockCoords.z;
+        int currX = blockCoords.x();
+        int currY = blockCoords.y();
+        int currZ = blockCoords.z();
 
         World              world       = store.getExternalData().getWorld();
         Store<EntityStore> entityStore = world.getEntityStore().getStore();
@@ -139,7 +139,7 @@ public final class SprinklerHelper
             }
 
             TilledSoilBlock soil = getChunkComponent(chunk, x, y, z, TilledSoilBlock.getComponentType());
-            if( soil == null ) {
+            if( soil == null && !SeedPlacerHelper.isSoil(blockChunk, new Vector3i(x, y, z)) ) {
                 continue;
             }
 

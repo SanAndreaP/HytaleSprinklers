@@ -38,6 +38,7 @@ public class SprinklerPlugin
         LOGGER.atInfo().log("Setting up plugin " + this.getName());
 
         this.getEventRegistry().register((short) -32, LoadedAssetsEvent.class, Item.class, SeedPlacerHelper::onItemAssetLoad);
+        this.getEventRegistry().register((short) -32, LoadedAssetsEvent.class, Interaction.class, SeedPlacerHelper::onInteractionAssetLoad);
         this.getCodecRegistry(Interaction.CODEC).register("SanAndreaP_Sprinkler", SprinklerInteraction.class, SprinklerInteraction.CODEC);
         SprinklerBlock.registerComponent(this.getChunkStoreRegistry());
     }

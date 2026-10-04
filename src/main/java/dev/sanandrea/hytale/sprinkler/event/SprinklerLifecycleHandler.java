@@ -6,16 +6,10 @@
 
 package dev.sanandrea.hytale.sprinkler.event;
 
-import com.hypixel.hytale.component.AddReason;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.RemoveReason;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
@@ -23,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import dev.sanandrea.hytale.sprinkler.SprinklerBlock;
 import dev.sanandrea.hytale.sprinkler.util.SprinklerHelper;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
+import org.joml.Vector3ic;
 
 import javax.annotation.Nonnull;
 
@@ -58,7 +53,7 @@ public class SprinklerLifecycleHandler
 
         sprinkler.scheduleTick(store, commandBuffer, blockStateInfo, false);
 
-        Vector3i blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo, commandBuffer);
+        Vector3ic blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo, commandBuffer);
         sprinkler.activateWatering(blockCoords, store);
     }
 
@@ -68,7 +63,7 @@ public class SprinklerLifecycleHandler
     {
         World world = store.getExternalData().getWorld();
 
-        BlockModule.BlockStateInfo blockStateInfo = commandBuffer.getComponent(ref, this.blockStateInfoCT);
+        BlockModule.BlockStateInfo blockStateInfo = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
         if( blockStateInfo == null ) {
             return;
         }
@@ -78,8 +73,8 @@ public class SprinklerLifecycleHandler
             return;
         }
 
-        Vector3i   blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo, commandBuffer);
-        WorldChunk chunk       = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(blockCoords.getX(), blockCoords.getZ()));
+        Vector3ic   blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo, commandBuffer);
+        WorldChunk chunk        = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(blockCoords.x(), blockCoords.z()));
 
         if( chunk != null ) {
             sprinkler.destroy(chunk, blockCoords);
