@@ -6,13 +6,23 @@
 
 package dev.sanandrea.hytale.sprinkler;
 
+import com.hypixel.hytale.builtin.adventure.farming.FarmingUtil;
 import com.hypixel.hytale.builtin.adventure.farming.states.TilledSoilBlock;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.component.*;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.component.ComponentRegistryProxy;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.protocol.*;
+import com.hypixel.hytale.protocol.BlockRotation;
+import com.hypixel.hytale.protocol.Color;
+import com.hypixel.hytale.protocol.Direction;
+import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.Position;
 import com.hypixel.hytale.protocol.packets.world.SpawnParticleSystem;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockFace;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -23,16 +33,15 @@ import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackSlotTransaction;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.interaction.BlockPlaceUtils;
-import com.hypixel.hytale.server.core.universe.world.SetBlockSettings;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.WorldNotificationHandler;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.sanandrea.hytale.sprinkler.event.SprinklerLifecycleHandler;
 import dev.sanandrea.hytale.sprinkler.event.SprinklerTickHandler;
-import dev.sanandrea.hytale.sprinkler.interaction.SeedPlacerHelper;
+import dev.sanandrea.hytale.sprinkler.interaction.AssetsHelper;
 import dev.sanandrea.hytale.sprinkler.util.SprinklerHelper;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import org.joml.Vector3i;
@@ -49,8 +58,8 @@ import java.util.logging.Level;
 public class SprinklerBlock
         implements Component<ChunkStore>
 {
-    public static final BuilderCodec<SprinklerBlock>              CODEC;
-    private static      ComponentType<ChunkStore, SprinklerBlock> component = null;
+    public static final BuilderCodec<SprinklerBlock> CODEC;
+    private static ComponentType<ChunkStore, SprinklerBlock> component = null;
 
     public static void registerComponent(ComponentRegistryProxy<ChunkStore> registry) {
         if( component == null ) {
@@ -65,9 +74,9 @@ public class SprinklerBlock
     }
 
     protected int[][] perimeter = new int[0][];
-    protected int     duration  = 60 * 60 * 24;
-    private   int     range     = 0;
-    private   Instant nextRun   = null;
+    protected int duration = 60 * 60 * 24;
+    private int range = 0;
+    private Instant nextRun = null;
 
     public SprinklerBlock() {}
 
@@ -98,14 +107,14 @@ public class SprinklerBlock
         Ref<ChunkStore> chunkRef = blockStateInfo.getSectionRef();
         if( chunkRef.isValid() ) {
             int index = blockStateInfo.getIndex();
-            int x     = ChunkUtil.xFromColumn(index);
-            int y     = ChunkUtil.xFromColumn(index);
-            int z     = ChunkUtil.xFromColumn(index);
+            int x = ChunkUtil.xFromIndex(index);
+            int y = ChunkUtil.yFromIndex(index);
+            int z = ChunkUtil.zFromIndex(index);
 
             BlockSection blockSection = commandBuffer.getComponent(chunkRef, BlockSection.getComponentType());
             if( blockSection == null ) return;
 
-            Instant      nextRunTime  = this.getNextRun();
+            Instant nextRunTime = this.getNextRun();
             if( nextRunTime == null || forNext ) {
                 nextRunTime = this.setNextRun(SprinklerHelper.getGameTime(store));
             }
@@ -117,18 +126,47 @@ public class SprinklerBlock
         }
     }
 
-    private boolean waterSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk chunk, Instant gameTime) {
+    public boolean tryHarvestCrop(WorldChunk chunk, Vector3i targetBlock, CommandBuffer<EntityStore> commandBuffer,
+                                  InteractionContext interactionContext)
+    {
+        final ItemContainer heldItemContainer = interactionContext.getHeldItemContainer();
+        if( heldItemContainer == null ) {
+            return false;
+        }
+
+        final Ref<EntityStore> eRef = interactionContext.getEntity();
+        final byte slot = interactionContext.getHeldItemSlot();
+
+        return SprinklerHelper.callForPerimeter(targetBlock, chunk.getReference().getStore(), this.perimeter,
+                                                (_, world, _, x, y, z, _) -> {
+                                                    ItemStack currSlotItem = heldItemContainer.getItemStack(slot);
+                                                    if( currSlotItem == null || currSlotItem.isEmpty() || currSlotItem.isBroken() ) {
+                                                        return false;
+                                                    }
+
+                                                    Vector3i cropPos = new Vector3i(x, y + 1, z);
+                                                    if( FarmingUtil.harvest(world.getChunkStore().getStore(), commandBuffer, eRef, cropPos) ) {
+                                                        ItemStackSlotTransaction trans = SprinklerHelper.damageItem(eRef, currSlotItem, -1, slot, commandBuffer);
+
+                                                        return trans != null && trans.succeeded();
+                                                    }
+
+                                                    return false;
+                                                });
+    }
+
+    private boolean waterSoil(TilledSoilBlock soil, World world, BlockSection blockChunk, int x, int y, int z, Instant gameTime) {
         if( soil == null ) return false;
 
         Instant nextWatering = gameTime.plus(this.duration, ChronoUnit.SECONDS);
         soil.setWateredUntil(nextWatering);
         // decay until 1 millennium passed - effectively "never" decay - or until sprinkler gets destroyed
         soil.setDecayTime(gameTime.plus(365L * 1000L, ChronoUnit.DAYS));
-        chunk.setTicking(x, y, z, true);
-        blockChunk.getSectionAtBlockY(y).scheduleTick(ChunkUtil.indexBlock(x, y, z), nextWatering);
-        chunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
+        blockChunk.setTicking(x, y, z, true);
+        blockChunk.scheduleTick(ChunkUtil.indexBlock(x, y, z), nextWatering);
+        blockChunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
 
-        WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
+        WorldNotificationHandler notificationHandler = world.getNotificationHandler();
         notificationHandler.sendPacketIfChunkLoaded(
                 new SpawnParticleSystem("Water_Can_Splash", new Position(x + 0.5D, y + 1D, z + 0.5D), new Direction(), 0.5F,
                                         new Color((byte) 64, (byte) 96, (byte) 255), 0.0F), x, z);
@@ -138,8 +176,8 @@ public class SprinklerBlock
 
     public void activateWatering(@Nonnull Vector3ic blockCoords, Store<ChunkStore> chunkStore) {
         SprinklerHelper.callForPerimeter(blockCoords, chunkStore, this.perimeter, this::waterSoil,
-                                         (bc, chunk, _) -> {
-                                             WorldNotificationHandler notificationHandler = chunk.getWorld().getNotificationHandler();
+                                         (bc, world, _, _) -> {
+                                             WorldNotificationHandler notificationHandler = world.getNotificationHandler();
 
                                              double ox = bc.x() + 0.5F;
                                              double oz = bc.z() + 0.5F;
@@ -157,12 +195,14 @@ public class SprinklerBlock
                                          });
     }
 
-    public boolean tryPlaceSeed(WorldChunk chunk, Vector3i targetBlock, ItemStack itemStack, CommandBuffer<EntityStore> commandBuffer, InteractionContext interactionContext) {
+    public boolean tryPlaceSeed(WorldChunk chunk, Vector3i targetBlock, ItemStack itemStack,
+                                CommandBuffer<EntityStore> commandBuffer, InteractionContext interactionContext)
+    {
         if( itemStack == null || itemStack.isEmpty() ) {
             return false;
         }
 
-        String blockTypeKey = SeedPlacerHelper.getBlockFromSeedId(itemStack.getItemId());
+        String blockTypeKey = AssetsHelper.getBlockFromSeedId(itemStack.getItemId());
         if( blockTypeKey == null ) {
             return false;
         }
@@ -172,40 +212,41 @@ public class SprinklerBlock
             return false;
         }
 
-        final Ref<EntityStore> eRef      = interactionContext.getEntity();
-        final Vector3i         blockFace = new Vector3i(BlockFace.DOWN.getDirection());
-        final byte             slot      = interactionContext.getHeldItemSlot();
+        final Ref<EntityStore> eRef = interactionContext.getEntity();
+        final Vector3i blockFace = new Vector3i(BlockFace.DOWN.getDirection());
+        final byte slot = interactionContext.getHeldItemSlot();
         return SprinklerHelper.callForPerimeter(targetBlock, chunk.getReference().getStore(), this.perimeter,
-                                                (_, blockChunk, x, y, z, localChunk, _) -> {
+                                                (_, world, blockSection, x, y, z, _) -> {
                                                     ItemStack currSlotItem = heldItemContainer.getItemStack(slot);
                                                     if( currSlotItem == null || currSlotItem.isEmpty() ) {
                                                         return false;
                                                     }
 
-                                                    BlockType currBlockType = BlockType.getAssetMap().getAsset(blockChunk.getBlock(x, y + 1, z));
+                                                    BlockType currBlockType = BlockType.getAssetMap().getAsset(blockSection.get(x, y + 1, z));
                                                     if( currBlockType == null || "Empty".equals(currBlockType.getId()) ) {
-                                                        Store<ChunkStore> chunkStore = localChunk.getWorld().getChunkStore().getStore();
+                                                        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
                                                         Ref<ChunkStore> sectionRef = chunkStore.getExternalData().getChunkSectionReferenceAtBlock(x, y + 1, z);
-                                                        boolean success = BlockPlaceUtils.placeBlock(eRef, itemStack, blockTypeKey, heldItemContainer,
-                                                                                                     blockFace, new Vector3i(x, y + 1, z), new BlockRotation(), slot,
-                                                                                                     true, sectionRef, chunkStore, commandBuffer,
-                                                                                                     false, false, false);
+                                                        if( sectionRef == null ) {
+                                                            return false;
+                                                        }
 
-                                                        return success;
+                                                        return BlockPlaceUtils.placeBlock(eRef, itemStack, blockTypeKey, heldItemContainer,
+                                                                                          blockFace, new Vector3i(x, y + 1, z), new BlockRotation(), slot,
+                                                                                          true, sectionRef, chunkStore, commandBuffer,
+                                                                                          false, false, false);
                                                     }
 
                                                     return false;
                                                 });
     }
 
-    public static boolean tryUpgradeSprinkler(WorldChunk chunk, Vector3i targetBlock, ItemStack itemStack, CommandBuffer<EntityStore> commandBuffer, InteractionContext interactionContext) {
+    public static boolean tryUpgradeSprinkler(BlockSection blockSection, Vector3i targetBlock, ItemStack itemStack, CommandBuffer<EntityStore> commandBuffer, InteractionContext interactionContext) {
         if( itemStack == null || itemStack.isEmpty() || !itemStack.getItemId().equals("SanAndreaP_Sprinkler_Funnel") ) {
             return false;
         }
 
         final ItemContainer heldItemContainer = interactionContext.getHeldItemContainer();
-        BlockType           current           = chunk.getBlockType(targetBlock);
-
+        BlockType current = BlockType.getAssetMap().getAsset(blockSection.get(targetBlock.x, targetBlock.y, targetBlock.z));
         if( heldItemContainer == null || current == null ) {
             return false;
         }
@@ -217,15 +258,10 @@ public class SprinklerBlock
             return false;
         }
 
-        BlockType newBlockType = BlockType.getAssetMap().getAsset(newStateId);
-        if( newBlockType == null ) {
-            return false;
-        }
-
-        final byte             slot            = interactionContext.getHeldItemSlot();
-        final Ref<EntityStore> store           = interactionContext.getEntity();
-        Player                 playerComponent = commandBuffer.getComponent(store, Player.getComponentType());
-        boolean                isAdventureMode = (playerComponent == null || playerComponent.getGameMode() == GameMode.Adventure);
+        final byte slot = interactionContext.getHeldItemSlot();
+        final Ref<EntityStore> store = interactionContext.getEntity();
+        Player playerComponent = commandBuffer.getComponent(store, Player.getComponentType());
+        boolean isAdventureMode = (playerComponent == null || playerComponent.getGameMode() == GameMode.Adventure);
         if( isAdventureMode ) {
             ItemStackSlotTransaction transaction = heldItemContainer.removeItemStackFromSlot(slot, itemStack, 1);
             if( !transaction.succeeded() ) {
@@ -233,14 +269,15 @@ public class SprinklerBlock
             }
         }
 
-        int settings = SetBlockSettings.NO_UPDATE_HEIGHTMAP | SetBlockSettings.NO_SET_FILLER;
-        chunk.setBlock(targetBlock.x(), targetBlock.y(), targetBlock.z(), newStateId, newBlockType, 0, 0, settings);
+        blockSection.set(targetBlock.x(), targetBlock.y(), targetBlock.z(), newStateId, 0, 0);
 
         return true;
     }
 
-    public static boolean isFunneled(WorldChunk chunk, Vector3i targetBlock) {
-        Optional<String> stateDefId = Optional.ofNullable(chunk.getBlockType(targetBlock))
+    public static boolean isFunneled(BlockSection blockSection, Vector3i targetBlock) {
+        int blockId = blockSection.get(targetBlock.x(), targetBlock.y(), targetBlock.z());
+
+        Optional<String> stateDefId = Optional.ofNullable(BlockType.getAssetMap().getAsset(blockId))
                                               .flatMap(bt -> Optional.ofNullable(bt.getStateForBlock(bt)));
         return stateDefId.isPresent() && "Funnel".equals(stateDefId.get());
     }
@@ -249,16 +286,16 @@ public class SprinklerBlock
         SprinklerHelper.callForPerimeter(targetBlock, chunk.getReference().getStore(), this.perimeter, this::resetSoil);
     }
 
-    private boolean resetSoil(TilledSoilBlock soil, BlockChunk blockChunk, int x, int y, int z, WorldChunk localChunk, Instant time) {
+    private boolean resetSoil(TilledSoilBlock soil, World world, BlockSection blockChunk, int x, int y, int z, Instant gameTime) {
         if( soil == null ) return false;
 
         Instant soilDriesAt = Optional.ofNullable(soil.getWateredUntil()).orElse(Instant.now());
         // reset decay timer
         Instant soilDecaysAt = soilDriesAt.plus(this.duration, ChronoUnit.SECONDS);
         soil.setDecayTime(soilDecaysAt);
-        localChunk.setTicking(x, y, z, true);
-        blockChunk.getSectionAtBlockY(y).scheduleTick(ChunkUtil.indexBlock(x, y, z), soilDecaysAt);
-        localChunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
+        blockChunk.setTicking(x, y, z, true);
+        blockChunk.scheduleTick(ChunkUtil.indexBlock(x, y, z), soilDecaysAt);
+        blockChunk.setTicking(x, y + 1, z, true); // tick plant as well, if exists...
 
         SprinklerPlugin.LOGGER.at(Level.FINEST).atMostEvery(1, TimeUnit.SECONDS).log("Sprinkler destroyed!");
 
@@ -276,9 +313,9 @@ public class SprinklerBlock
                             .build();
     }
 
-    @NullableDecl
     @Override
-    @SuppressWarnings({ "MethodDoesntCallSuperMethod", "java:S1182", "java:S2975" })
+    @NullableDecl
+    @SuppressWarnings({ "MethodDoesntCallSuperMethod" })
     public Component<ChunkStore> clone() {
         return new SprinklerBlock(this.range, this.perimeter, this.duration, this.nextRun);
     }

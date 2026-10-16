@@ -16,9 +16,10 @@ import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.RootInteraction;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.BlockConditionInteraction;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import dev.sanandrea.hytale.sprinkler.SprinklerPlugin;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -31,18 +32,19 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.logging.Level;
 
-public class SeedPlacerHelper
+public class AssetsHelper
 {
     private static final Map<String, String> SEED_TO_BLOCK = new HashMap<>();
-    private static final Map<String, String> SEED_TO_SOILCND = new HashMap<>();
+    private static final List<String> SICKLES = new ArrayList<>();
     private static final Map<String, BlockConditionData[]> SOILCND_TO_BLOCKS = new HashMap<>();
 
-    private SeedPlacerHelper() {}
+    private AssetsHelper() {}
 
     public static void onItemAssetLoad(@Nonnull LoadedAssetsEvent<String, Item, DefaultAssetMap<String, Item>> event) {
         final Map<String, Item> assets = event.getLoadedAssets();
         for( Map.Entry<String, Item> entry : assets.entrySet() ) {
-            final Item                item            = entry.getValue();
+            final Item item = entry.getValue();
+            final Map<InteractionType, String> interactions = item.getInteractions();
             final Map<String, String> interactionVars = item.getInteractionVars();
 
             if( interactionVars.containsKey("SeedId") ) {
@@ -50,11 +52,8 @@ public class SeedPlacerHelper
                 String itemId = item.getId();
 
                 SEED_TO_BLOCK.put(itemId, blockType);
-
-                final Map<InteractionType, String> interactions = item.getInteractions();
-                if( interactions.containsKey(InteractionType.Secondary) ) {
-                    SEED_TO_SOILCND.put(itemId, interactions.get(InteractionType.Secondary));
-                }
+            } else if( interactions.values().stream().anyMatch(in -> in.equals("Sickle_Attack") || in.contains("Tool_Sickle_Iron")) ) {
+                SICKLES.add(item.getId());
             }
         }
     }
@@ -71,12 +70,16 @@ public class SeedPlacerHelper
     }
 
     //TODO: test for tags & states...
-    public static boolean isSoil(BlockChunk chunk, Vector3ic blockPos) {
-        final int blockId = chunk.getBlock(blockPos.x(), blockPos.y(), blockPos.z());
+    public static boolean isSoil(BlockSection section, Vector3ic blockPos) {
+        final int blockId = section.get(blockPos.x(), blockPos.y(), blockPos.z());
         final BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
 
         return SOILCND_TO_BLOCKS.values().stream().anyMatch(bcData ->
-                Arrays.stream(bcData).anyMatch(bcd -> bcd.test(blockType)));
+                                                                    Arrays.stream(bcData).anyMatch(bcd -> bcd.test(blockType)));
+    }
+
+    public static boolean isSickle(ItemStack stack) {
+        return SICKLES.contains(stack.getItemId());
     }
 
     public static String getBlockFromSeedId(String seedId) {
@@ -88,6 +91,7 @@ public class SeedPlacerHelper
     private static Field blockIdField = null;
     private static Field blockStateField = null;
     private static Field blockTagField = null;
+
     private static BlockConditionData[] extractBlockIdsFromBlockConditionInteraction(BlockConditionInteraction interaction) {
         try {
             if( matchersField == null ) {
@@ -112,7 +116,7 @@ public class SeedPlacerHelper
             }
 
             return getBlockConditionData(interaction);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch( NoSuchFieldException | IllegalAccessException e ) {
             throw new RuntimeException(e);
         }
     }
@@ -162,9 +166,11 @@ public class SeedPlacerHelper
         return null;
     }
 
-    @SuppressWarnings("deprecation")
     private static String readBlockTypeFromBuffer(char[] buf) {
         try( RawJsonReader reader = RawJsonReader.fromBuffer(buf) ) {
+            //TODO: if readBsonDocument is removed, look @
+            // com.hypixel.hytale.builtin.hytalegenerator.plugin.editor.BiomeEditor.createAssetFromTemplate
+            @SuppressWarnings("deprecation")
             BsonDocument doc = RawJsonReader.readBsonDocument(reader);
 
             if( !doc.isArray("Interactions") ) {
@@ -186,7 +192,8 @@ public class SeedPlacerHelper
         return null;
     }
 
-    private record BlockConditionData(String id, String state, String tag) {
+    private record BlockConditionData(String id, String state, String tag)
+    {
         public boolean test(BlockType type) {
             return this.id != null && this.id.equals(type.getId());
         }

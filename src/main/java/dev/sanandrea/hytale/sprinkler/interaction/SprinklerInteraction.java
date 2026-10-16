@@ -8,7 +8,7 @@ package dev.sanandrea.hytale.sprinkler.interaction;
 
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.protocol.InteractionState;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
@@ -17,6 +17,8 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.sanandrea.hytale.sprinkler.SprinklerBlock;
 import dev.sanandrea.hytale.sprinkler.util.SprinklerHelper;
@@ -33,23 +35,35 @@ public class SprinklerInteraction
 
     @Override
     protected void interactWithBlock(@NonNullDecl World world, @NonNullDecl CommandBuffer<EntityStore> commandBuffer, @NonNullDecl InteractionType type, @NonNullDecl InteractionContext context, @NullableDecl ItemStack itemStack, @NonNullDecl Vector3i targetBlock, @NonNullDecl CooldownHandler cooldownHandler) {
-        final WorldChunk chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(targetBlock.x(), targetBlock.z()));
+        final WorldChunk chunk = SprinklerHelper.getChunk(world.getChunkStore(), targetBlock);
         if( chunk == null ) {
             context.getState().state = InteractionState.Failed;
             return;
         }
 
-        SprinklerBlock sprinkler = SprinklerHelper.getChunkComponent(chunk, targetBlock, SprinklerBlock.getComponent());
+        Ref<ChunkStore> chunkStoreRef = chunk.getReference();
+
+        BlockSection section = SprinklerHelper.getBlockSection(chunkStoreRef, targetBlock);
+        if( section == null ) {
+            context.getState().state = InteractionState.Failed;
+            return;
+        }
+
+        SprinklerBlock sprinkler = SprinklerHelper.getBlockEntity(chunkStoreRef, section, targetBlock, SprinklerBlock.getComponent());
         if( sprinkler != null ) {
             if( itemStack == null || itemStack.isEmpty() ) {
-                sprinkler.activateWatering(targetBlock, chunk.getReference().getStore());
+                sprinkler.activateWatering(targetBlock, chunkStoreRef.getStore());
             } else {
-                if( SprinklerBlock.isFunneled(chunk, targetBlock) ) {
-                    if( !sprinkler.tryPlaceSeed(chunk, targetBlock, itemStack, commandBuffer, context) ) {
-                        context.getState().state = InteractionState.Failed;
+                if( SprinklerBlock.isFunneled(section, targetBlock) ) {
+                    if( sprinkler.tryPlaceSeed(chunk, targetBlock, itemStack, commandBuffer, context) ) {
+                        return;
                     }
+                    if( AssetsHelper.isSickle(itemStack) && sprinkler.tryHarvestCrop(chunk, targetBlock, commandBuffer, context) ) {
+                        return;
+                    }
+                    context.getState().state = InteractionState.Failed;
                 } else {
-                    if( !SprinklerBlock.tryUpgradeSprinkler(chunk, targetBlock, itemStack, commandBuffer, context) ) {
+                    if( !SprinklerBlock.tryUpgradeSprinkler(section, targetBlock, itemStack, commandBuffer, context) ) {
                         context.getState().state = InteractionState.Failed;
                     }
                 }

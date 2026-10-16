@@ -34,8 +34,6 @@
     ]
   },
   "PlayerAnimationsId": "Item",
-  "Model": "Blocks/Farming/SanAndreaP_Sprinkler_Funnel_Upgrade.blockymodel",
-  "Texture": "Blocks/Farming/SanAndreaP_Sprinkler_Texture_Thorium.png",
   "BlockType": {
     "CustomModel": "Blocks/Farming/SanAndreaP_Sprinkler_Funnel_Upgrade.blockymodel",
     "CustomModelTexture": [

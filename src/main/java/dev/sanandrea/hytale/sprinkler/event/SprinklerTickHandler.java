@@ -31,16 +31,11 @@ import java.util.logging.Level;
 public class SprinklerTickHandler
         extends EntityTickingSystem<ChunkStore>
 {
-    @Nonnull
-    private final ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoCT;
-    @Nonnull
-    private final ComponentType<ChunkStore, BlockSection>               blockSectionCT;
-    @Nonnull
-    private final ComponentType<ChunkStore, ChunkSection>               chunkSectionCT;
-    @Nonnull
-    private final ComponentType<ChunkStore, SprinklerBlock>             sprinklerCT;
-    @Nonnull
-    private final Query<ChunkStore>                                     query;
+    private final @Nonnull ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoCT;
+    private final @Nonnull ComponentType<ChunkStore, BlockSection> blockSectionCT;
+    private final @Nonnull ComponentType<ChunkStore, ChunkSection> chunkSectionCT;
+    private final @Nonnull ComponentType<ChunkStore, SprinklerBlock> sprinklerCT;
+    private final @Nonnull Query<ChunkStore> query;
 
     public SprinklerTickHandler(@Nonnull ComponentType<ChunkStore, SprinklerBlock> component) {
         this.blockStateInfoCT = BlockModule.BlockStateInfo.getComponentType();
@@ -95,13 +90,18 @@ public class SprinklerTickHandler
         Store<ChunkStore> store = blockRef.getStore();
 
         Instant nextRun = sprinkler.getNextRun();
-        Instant now     = SprinklerHelper.getGameTime(store);
+        Instant now = SprinklerHelper.getGameTime(store);
         if( nextRun != null && nextRun.isAfter(now) ) {
             return;
         }
 
-        Vector3ic globalCoord = SprinklerHelper.getGlobalPosition(localCoords, blockStateInfo, commandBuffer);
+        Ref<ChunkStore> sectionRef = blockStateInfo.getSectionRef();
+        ChunkSection chunkSection = sectionRef.getStore().getComponent(sectionRef, ChunkSection.getComponentType());
+        if( chunkSection == null ) {
+            return;
+        }
 
+        Vector3ic globalCoord = SprinklerHelper.getGlobalPosition(localCoords, chunkSection);
         sprinkler.activateWatering(new Vector3i(globalCoord.x(), globalCoord.y(), globalCoord.z()), store);
         sprinkler.scheduleTick(store, commandBuffer, blockStateInfo, true);
 
@@ -109,8 +109,8 @@ public class SprinklerTickHandler
                               .log("Sprinkler tick at [%d, %d, %d]", globalCoord.x(), globalCoord.y(), globalCoord.z());
     }
 
-    @NonNullDecl
     @Override
+    @NonNullDecl
     public Query<ChunkStore> getQuery() {
         return this.query;
     }

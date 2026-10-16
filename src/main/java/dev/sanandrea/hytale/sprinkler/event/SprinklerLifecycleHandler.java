@@ -6,12 +6,15 @@
 
 package dev.sanandrea.hytale.sprinkler.event;
 
-import com.hypixel.hytale.component.*;
+import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.RemoveReason;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
-import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import dev.sanandrea.hytale.sprinkler.SprinklerBlock;
@@ -24,12 +27,9 @@ import javax.annotation.Nonnull;
 public class SprinklerLifecycleHandler
         extends RefSystem<ChunkStore>
 {
-    @Nonnull
-    private final ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoCT;
-    @Nonnull
-    private final ComponentType<ChunkStore, SprinklerBlock>             sprinklerCT;
-    @Nonnull
-    private final Query<ChunkStore>                                     query;
+    private final @Nonnull ComponentType<ChunkStore, BlockModule.BlockStateInfo> blockStateInfoCT;
+    private final @Nonnull ComponentType<ChunkStore, SprinklerBlock> sprinklerCT;
+    private final @Nonnull Query<ChunkStore> query;
 
     public SprinklerLifecycleHandler(@Nonnull ComponentType<ChunkStore, SprinklerBlock> component) {
         this.blockStateInfoCT = BlockModule.BlockStateInfo.getComponentType();
@@ -53,16 +53,16 @@ public class SprinklerLifecycleHandler
 
         sprinkler.scheduleTick(store, commandBuffer, blockStateInfo, false);
 
-        Vector3ic blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo, commandBuffer);
-        sprinkler.activateWatering(blockCoords, store);
+        Vector3ic blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo);
+        if( blockCoords != null ) {
+            sprinkler.activateWatering(blockCoords, store);
+        }
     }
 
     @Override
     public void onEntityRemove(@Nonnull Ref<ChunkStore> ref, @Nonnull RemoveReason reason, @Nonnull Store<ChunkStore> store,
                                @Nonnull CommandBuffer<ChunkStore> commandBuffer)
     {
-        World world = store.getExternalData().getWorld();
-
         BlockModule.BlockStateInfo blockStateInfo = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
         if( blockStateInfo == null ) {
             return;
@@ -73,16 +73,19 @@ public class SprinklerLifecycleHandler
             return;
         }
 
-        Vector3ic   blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo, commandBuffer);
-        WorldChunk chunk        = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(blockCoords.x(), blockCoords.z()));
+        Vector3ic blockCoords = SprinklerHelper.getGlobalPosition(blockStateInfo);
+        if( blockCoords == null ) {
+            return;
+        }
 
+        WorldChunk chunk = SprinklerHelper.getChunk(ref, blockCoords);
         if( chunk != null ) {
             sprinkler.destroy(chunk, blockCoords);
         }
     }
 
-    @NonNullDecl
     @Override
+    @NonNullDecl
     public Query<ChunkStore> getQuery() {
         return this.query;
     }

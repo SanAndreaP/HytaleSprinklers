@@ -6,7 +6,8 @@
 
 package dev.sanandrea.hytale.sprinkler.util.function;
 
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import org.joml.Vector3ic;
 
 import javax.annotation.Nonnull;
@@ -15,5 +16,5 @@ import java.time.Instant;
 @FunctionalInterface
 public interface PostProcessFunction
 {
-    void accept(@Nonnull Vector3ic blockCoords, WorldChunk chunk, Instant gameTime);
+    void accept(@Nonnull Vector3ic blockCoords, World world, BlockSection section, Instant gameTime);
 }
