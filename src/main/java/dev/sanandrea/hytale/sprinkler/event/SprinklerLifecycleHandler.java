@@ -63,6 +63,10 @@ public class SprinklerLifecycleHandler
     public void onEntityRemove(@Nonnull Ref<ChunkStore> ref, @Nonnull RemoveReason reason, @Nonnull Store<ChunkStore> store,
                                @Nonnull CommandBuffer<ChunkStore> commandBuffer)
     {
+        if (reason == RemoveReason.UNLOAD) {
+            return;
+        }
+
         BlockModule.BlockStateInfo blockStateInfo = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
         if( blockStateInfo == null ) {
             return;
